@@ -4,17 +4,49 @@ import type { AuthenticatedRequest } from '../middleware/authMiddleware.js'
 
 import Feedback from '../models/Feedback.js'
 
-const allowedContentTypes = [
+type FeedbackContentType =
+  | 'meme'
+  | 'ai-insight'
+  | 'market-news'
+  | 'coin-prices'
+
+type FeedbackVote =
+  | 'like'
+  | 'dislike'
+
+const allowedContentTypes: FeedbackContentType[] = [
   'meme',
   'ai-insight',
   'market-news',
   'coin-prices',
 ]
 
-const allowedVotes = [
+const allowedVotes: FeedbackVote[] = [
   'like',
   'dislike',
 ]
+
+const isValidContentType = (
+  value: unknown,
+): value is FeedbackContentType => {
+  return (
+    typeof value === 'string' &&
+    allowedContentTypes.includes(
+      value as FeedbackContentType,
+    )
+  )
+}
+
+const isValidVote = (
+  value: unknown,
+): value is FeedbackVote => {
+  return (
+    typeof value === 'string' &&
+    allowedVotes.includes(
+      value as FeedbackVote,
+    )
+  )
+}
 
 export const saveFeedback = async (
   req: AuthenticatedRequest,
@@ -37,17 +69,21 @@ export const saveFeedback = async (
       })
     }
 
-    if (
-      !allowedContentTypes.includes(contentType)
-    ) {
+    if (!isValidContentType(contentType)) {
       return res.status(400).json({
         message: 'Invalid content type',
       })
     }
 
-    if (!allowedVotes.includes(vote)) {
+    if (!isValidVote(vote)) {
       return res.status(400).json({
         message: 'Invalid vote',
+      })
+    }
+
+    if (typeof contentId !== 'string') {
+      return res.status(400).json({
+        message: 'Invalid content id',
       })
     }
 
@@ -76,7 +112,10 @@ export const saveFeedback = async (
       feedback,
     })
   } catch (error) {
-    console.error('Save feedback error:', error)
+    console.error(
+      'Save feedback error:',
+      error,
+    )
 
     return res.status(500).json({
       message: 'Failed to save feedback',
@@ -95,19 +134,11 @@ export const getFeedback = async (
     } = req.query
 
     if (
-      typeof contentType !== 'string' ||
+      !isValidContentType(contentType) ||
       typeof contentId !== 'string'
     ) {
       return res.status(400).json({
         message: 'Missing feedback parameters',
-      })
-    }
-
-    if (
-      !allowedContentTypes.includes(contentType)
-    ) {
-      return res.status(400).json({
-        message: 'Invalid content type',
       })
     }
 
@@ -121,7 +152,10 @@ export const getFeedback = async (
       vote: feedback?.vote || null,
     })
   } catch (error) {
-    console.error('Get feedback error:', error)
+    console.error(
+      'Get feedback error:',
+      error,
+    )
 
     return res.status(500).json({
       message: 'Failed to load feedback',

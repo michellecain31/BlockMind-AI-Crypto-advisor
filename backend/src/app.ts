@@ -13,7 +13,24 @@ import assetRoutes from './routes/assetRoutes.js'
 
 const app = express()
 
-app.use(cors())
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[]
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+        return
+      }
+
+      callback(new Error('Not allowed by CORS'))
+    },
+  }),
+)
+
 app.use(express.json())
 
 app.get('/health', (_req, res) => {
