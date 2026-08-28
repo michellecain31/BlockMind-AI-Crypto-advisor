@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   BrainCircuit,
@@ -7,7 +8,50 @@ import {
   Target,
 } from 'lucide-react'
 
+import { registerUser } from '../services/authService'
+
 function SignupPage() {
+  const navigate = useNavigate()
+
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await registerUser({
+        name,
+        email,
+        password,
+      })
+
+      localStorage.setItem('blockmind_token', response.token)
+      localStorage.setItem(
+        'blockmind_user',
+        JSON.stringify(response.user),
+      )
+
+      navigate('/onboarding')
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Something went wrong')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#070B14] text-white">
       <div className="grid min-h-screen lg:grid-cols-2">
@@ -48,6 +92,7 @@ function SignupPage() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
                     <Target size={19} />
                   </div>
+
                   <div>
                     <p className="font-medium">Choose what matters</p>
                     <p className="text-sm text-slate-500">
@@ -60,8 +105,11 @@ function SignupPage() {
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300">
                     <ChartNoAxesCombined size={19} />
                   </div>
+
                   <div>
-                    <p className="font-medium">Get your daily intelligence</p>
+                    <p className="font-medium">
+                      Get your daily intelligence
+                    </p>
                     <p className="text-sm text-slate-500">
                       One dashboard, personalized for you
                     </p>
@@ -84,7 +132,10 @@ function SignupPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/10">
                 <BrainCircuit size={20} />
               </div>
-              <span className="text-xl font-semibold">BlockMind</span>
+
+              <span className="text-xl font-semibold">
+                BlockMind
+              </span>
             </div>
 
             <div className="mb-7">
@@ -101,7 +152,10 @@ function SignupPage() {
               </p>
             </div>
 
-            <form className="space-y-4">
+            <form
+              className="space-y-4"
+              onSubmit={handleSubmit}
+            >
               <div>
                 <label
                   htmlFor="name"
@@ -113,7 +167,10 @@ function SignupPage() {
                 <input
                   id="name"
                   type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                   placeholder="Your name"
+                  required
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:bg-white/[0.06] focus:ring-4 focus:ring-violet-500/10"
                 />
               </div>
@@ -129,7 +186,10 @@ function SignupPage() {
                 <input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
+                  required
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:bg-white/[0.06] focus:ring-4 focus:ring-violet-500/10"
                 />
               </div>
@@ -145,28 +205,44 @@ function SignupPage() {
                 <input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   placeholder="Create a password"
+                  required
+                  minLength={6}
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:bg-white/[0.06] focus:ring-4 focus:ring-violet-500/10"
                 />
               </div>
 
+              {error && (
+                <div className="rounded-2xl border border-rose-400/20 bg-rose-400/[0.08] px-4 py-3 text-sm text-rose-200">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="group mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-3.5 font-medium text-white shadow-[0_18px_50px_rgba(91,33,182,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(91,33,182,0.35)]"
+                disabled={isLoading}
+                className="group mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-3.5 font-medium text-white shadow-[0_18px_50px_rgba(91,33,182,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(91,33,182,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
-                Create account
-                <ArrowRight
-                  size={18}
-                  className="transition group-hover:translate-x-1"
-                />
+                {isLoading ? 'Creating account...' : 'Create account'}
+
+                {!isLoading && (
+                  <ArrowRight
+                    size={18}
+                    className="transition group-hover:translate-x-1"
+                  />
+                )}
               </button>
             </form>
 
             <div className="my-7 flex items-center gap-4">
               <div className="h-px flex-1 bg-white/10" />
+
               <span className="text-xs uppercase tracking-[0.18em] text-slate-600">
                 Already a member?
               </span>
+
               <div className="h-px flex-1 bg-white/10" />
             </div>
 
@@ -178,8 +254,8 @@ function SignupPage() {
             </Link>
 
             <p className="mt-6 text-center text-xs leading-5 text-slate-600">
-              By creating an account, you agree to BlockMind&apos;s Terms and
-              Privacy Policy.
+              By creating an account, you agree to BlockMind&apos;s Terms
+              and Privacy Policy.
             </p>
           </div>
         </section>

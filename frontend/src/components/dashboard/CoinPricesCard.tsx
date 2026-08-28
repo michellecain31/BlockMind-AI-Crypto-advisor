@@ -1,203 +1,826 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
 import {
-    ArrowDownRight,
-    ArrowUpRight,
-    Bitcoin,
-    Gem,
-    MoreHorizontal,
-    Sparkles,
-  } from 'lucide-react'
-  
-  const coins = [
-    {
-      id: 'bitcoin',
-      name: 'Bitcoin',
-      symbol: 'BTC',
-      price: '$67,842.20',
-      change: '+2.46%',
-      positive: true,
-      icon: Bitcoin,
-      sparkline: [32, 38, 35, 44, 42, 51, 48, 58, 61, 67, 63, 72],
-    },
-    {
-      id: 'ethereum',
-      name: 'Ethereum',
-      symbol: 'ETH',
-      price: '$3,486.91',
-      change: '+1.83%',
-      positive: true,
-      icon: Gem,
-      sparkline: [42, 39, 44, 47, 45, 52, 49, 55, 53, 61, 58, 64],
-    },
-    {
-      id: 'solana',
-      name: 'Solana',
-      symbol: 'SOL',
-      price: '$148.32',
-      change: '-0.74%',
-      positive: false,
-      icon: Sparkles,
-      sparkline: [66, 62, 64, 57, 60, 54, 56, 51, 49, 53, 47, 45],
-    },
-  ]
-  
-  type SparklineProps = {
-    points: number[]
-    positive: boolean
+  ArrowDownRight,
+  ArrowUpRight,
+  LoaderCircle,
+  Plus,
+  RefreshCw,
+  Search,
+  TrendingUp,
+  X,
+} from 'lucide-react'
+
+type MarketPrice = {
+  id: string
+  price: number
+  change24h: number
+}
+
+type SearchCoin = {
+  id: string
+  name: string
+  symbol: string
+  rank: number | null
+  image: string
+}
+
+type StoredUser = {
+  id: string
+  name: string
+  email: string
+  onboardingCompleted: boolean
+  preferences?: {
+    assets: string[]
+    investorStyle?: string
+    contentPreferences: string[]
   }
-  
-  function Sparkline({ points, positive }: SparklineProps) {
-    const width = 150
-    const height = 55
-  
-    const max = Math.max(...points)
-    const min = Math.min(...points)
-    const range = max - min || 1
-  
-    const coordinates = points
-      .map((point, index) => {
-        const x = (index / (points.length - 1)) * width
-        const y = height - ((point - min) / range) * height
-  
-        return `${x},${y}`
-      })
-      .join(' ')
-  
-    return (
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="h-12 w-28 overflow-visible"
-        aria-hidden="true"
-      >
-        <polyline
-          points={coordinates}
-          fill="none"
-          stroke={positive ? '#a78bfa' : '#fb7185'}
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+}
+
+type CoinPricesCardProps = {
+  refreshKey: number
+}
+
+const coinDetails: Record<
+  string,
+  {
+    name: string
+    symbol: string
+    shortName: string
+  }
+> = {
+  bitcoin: {
+    name: 'Bitcoin',
+    symbol: 'BTC',
+    shortName: '₿',
+  },
+  ethereum: {
+    name: 'Ethereum',
+    symbol: 'ETH',
+    shortName: 'Ξ',
+  },
+  solana: {
+    name: 'Solana',
+    symbol: 'SOL',
+    shortName: 'S',
+  },
+  xrp: {
+    name: 'XRP',
+    symbol: 'XRP',
+    shortName: 'X',
+  },
+  cardano: {
+    name: 'Cardano',
+    symbol: 'ADA',
+    shortName: 'A',
+  },
+}
+
+function CoinPricesCard({
+  refreshKey,
+}: CoinPricesCardProps) {
+  const navigate = useNavigate()
+
+  const [prices, setPrices] = useState<MarketPrice[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<
+    SearchCoin[]
+  >([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchError, setSearchError] = useState('')
+
+  const [updatingAssetId, setUpdatingAssetId] = useState<
+    string | null
+  >(null)
+
+  const [dynamicDetails, setDynamicDetails] = useState<
+    Record<
+      string,
+      {
+        name: string
+        symbol: string
+        image?: string
+      }
+    >
+  >({})
+
+  const addMenuRef = useRef<HTMLDivElement>(null)
+
+  const fetchPrices = async () => {
+    const token = localStorage.getItem('blockmind_token')
+
+    if (!token) {
+      setError('You must be logged in.')
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch(
+        'http://localhost:5050/api/market/prices',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to load market prices',
+        )
+      }
+
+      setPrices(data.prices || [])
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Failed to load market prices')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPrices()
+  }, [refreshKey])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        addMenuRef.current &&
+        !addMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsAddOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      'mousedown',
+      handleClickOutside,
     )
+
+    return () => {
+      document.removeEventListener(
+        'mousedown',
+        handleClickOutside,
+      )
+    }
+  }, [])
+
+  useEffect(() => {
+    const query = searchQuery.trim()
+
+    if (query.length < 2) {
+      setSearchResults([])
+      setSearchError('')
+      setIsSearching(false)
+      return
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      const token = localStorage.getItem(
+        'blockmind_token',
+      )
+
+      if (!token) {
+        return
+      }
+
+      try {
+        setIsSearching(true)
+        setSearchError('')
+
+        const response = await fetch(
+          `http://localhost:5050/api/search/coins?q=${encodeURIComponent(
+            query,
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        )
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              'Failed to search cryptocurrencies',
+          )
+        }
+
+        setSearchResults(data.coins || [])
+      } catch (error) {
+        console.error('Market Watch search error:', error)
+
+        setSearchResults([])
+        setSearchError('Could not load search results.')
+      } finally {
+        setIsSearching(false)
+      }
+    }, 400)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [searchQuery])
+
+  const updateLocalUserAssets = (assets: string[]) => {
+    const storedUser = localStorage.getItem(
+      'blockmind_user',
+    )
+
+    if (!storedUser) {
+      return
+    }
+
+    try {
+      const user = JSON.parse(storedUser) as StoredUser
+
+      const updatedUser: StoredUser = {
+        ...user,
+        preferences: {
+          assets,
+          investorStyle:
+            user.preferences?.investorStyle,
+          contentPreferences:
+            user.preferences?.contentPreferences || [],
+        },
+      }
+
+      localStorage.setItem(
+        'blockmind_user',
+        JSON.stringify(updatedUser),
+      )
+    } catch (error) {
+      console.error(
+        'Failed to update stored user:',
+        error,
+      )
+    }
   }
-  
-  function CoinPricesCard() {
-    return (
-      <section className="rounded-[28px] border border-white/[0.08] bg-white/[0.025] p-6 sm:p-7">
-        <div className="mb-7 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold tracking-tight">
-                Market Watch
-              </h2>
-  
-              <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Live
-              </span>
+
+  const handleAddAsset = async (coin: SearchCoin) => {
+    const token = localStorage.getItem('blockmind_token')
+
+    if (!token) {
+      return
+    }
+
+    try {
+      setUpdatingAssetId(coin.id)
+      setSearchError('')
+
+      const response = await fetch(
+        'http://localhost:5050/api/assets',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            assetId: coin.id,
+          }),
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to add asset',
+        )
+      }
+
+      updateLocalUserAssets(data.assets || [])
+
+      setDynamicDetails((current) => ({
+        ...current,
+        [coin.id]: {
+          name: coin.name,
+          symbol: coin.symbol,
+          image: coin.image,
+        },
+      }))
+
+      setSearchQuery('')
+      setSearchResults([])
+      setIsAddOpen(false)
+
+      await fetchPrices()
+    } catch (error) {
+      console.error('Add asset error:', error)
+
+      if (error instanceof Error) {
+        setSearchError(error.message)
+      } else {
+        setSearchError('Failed to add asset')
+      }
+    } finally {
+      setUpdatingAssetId(null)
+    }
+  }
+
+  const handleRemoveAsset = async (
+    assetId: string,
+  ) => {
+    const token = localStorage.getItem('blockmind_token')
+
+    if (!token) {
+      return
+    }
+
+    try {
+      setUpdatingAssetId(assetId)
+      setError('')
+
+      const response = await fetch(
+        `http://localhost:5050/api/assets/${encodeURIComponent(
+          assetId,
+        )}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to remove asset',
+        )
+      }
+
+      updateLocalUserAssets(data.assets || [])
+
+      setPrices((current) =>
+        current.filter((coin) => coin.id !== assetId),
+      )
+    } catch (error) {
+      console.error('Remove asset error:', error)
+
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Failed to remove asset')
+      }
+    } finally {
+      setUpdatingAssetId(null)
+    }
+  }
+
+  const formatPrice = (price: number) => {
+    if (price >= 1000) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+      }).format(price)
+    }
+
+    if (price >= 1) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(price)
+    }
+
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    }).format(price)
+  }
+
+  const formatCoinName = (id: string) => {
+    return id
+      .split('-')
+      .map(
+        (word) =>
+          word.charAt(0).toUpperCase() + word.slice(1),
+      )
+      .join(' ')
+  }
+
+  const followedAssetIds = new Set(
+    prices.map((coin) => coin.id),
+  )
+
+  return (
+    <section className="overflow-visible rounded-3xl border border-white/10 bg-white/[0.025]">
+      <div className="relative flex items-center justify-between border-b border-white/[0.07] px-6 py-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-300">
+              <TrendingUp size={16} />
             </div>
-  
-            <p className="mt-1 text-sm text-slate-500">
-              Assets selected during your onboarding
-            </p>
+
+            <h2 className="font-semibold text-white">
+              Market Watch
+            </h2>
           </div>
-  
+
+          <p className="mt-2 text-sm text-slate-500">
+            Live prices for the assets you follow
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div
+            ref={addMenuRef}
+            className="relative"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setIsAddOpen((current) => !current)
+              }
+              className="flex h-9 items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/[0.08] px-3 text-sm font-medium text-violet-200 transition hover:bg-violet-500/[0.15]"
+            >
+              <Plus size={15} />
+              Add asset
+            </button>
+
+            {isAddOpen && (
+              <div className="absolute right-0 top-[calc(100%+10px)] z-[80] w-[340px] overflow-hidden rounded-2xl border border-white/10 bg-[#101522] shadow-2xl">
+                <div className="border-b border-white/[0.07] p-3">
+                  <div className="relative">
+                    <Search
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                    />
+
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(event) =>
+                        setSearchQuery(
+                          event.target.value,
+                        )
+                      }
+                      placeholder="Search an asset..."
+                      autoFocus
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2.5 pl-9 pr-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-violet-400/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="max-h-[330px] overflow-y-auto p-2">
+                  {searchQuery.trim().length < 2 && (
+                    <div className="px-4 py-8 text-center">
+                      <Search
+                        size={20}
+                        className="mx-auto text-slate-600"
+                      />
+
+                      <p className="mt-3 text-sm text-slate-400">
+                        Search for a cryptocurrency
+                      </p>
+
+                      <p className="mt-1 text-xs text-slate-600">
+                        Type at least 2 characters
+                      </p>
+                    </div>
+                  )}
+
+                  {isSearching && (
+                    <div className="flex items-center justify-center gap-2 py-10 text-sm text-slate-500">
+                      <LoaderCircle
+                        size={17}
+                        className="animate-spin"
+                      />
+                      Searching...
+                    </div>
+                  )}
+
+                  {!isSearching &&
+                    searchError && (
+                      <div className="px-4 py-8 text-center">
+                        <p className="text-sm text-rose-300">
+                          {searchError}
+                        </p>
+                      </div>
+                    )}
+
+                  {!isSearching &&
+                    !searchError &&
+                    searchQuery.trim().length >= 2 &&
+                    searchResults.length === 0 && (
+                      <div className="px-4 py-8 text-center">
+                        <p className="text-sm text-slate-400">
+                          No coins found
+                        </p>
+                      </div>
+                    )}
+
+                  {!isSearching &&
+                    !searchError &&
+                    searchResults.map((coin) => {
+                      const alreadyFollowing =
+                        followedAssetIds.has(coin.id)
+
+                      return (
+                        <div
+                          key={coin.id}
+                          className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
+                        >
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/[0.08] bg-white/[0.04]">
+                            {coin.image ? (
+                              <img
+                                src={coin.image}
+                                alt={coin.name}
+                                className="h-7 w-7 object-contain"
+                              />
+                            ) : (
+                              <span className="text-xs font-semibold text-violet-300">
+                                {coin.symbol.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-white">
+                              {coin.name}
+                            </p>
+
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              {coin.symbol}
+                              {coin.rank
+                                ? ` · #${coin.rank}`
+                                : ''}
+                            </p>
+                          </div>
+
+                          {alreadyFollowing ? (
+                            <span className="rounded-lg bg-emerald-400/[0.08] px-2.5 py-1.5 text-xs font-medium text-emerald-300">
+                              Following
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleAddAsset(coin)
+                              }
+                              disabled={
+                                updatingAssetId ===
+                                coin.id
+                              }
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/[0.08] text-violet-300 transition hover:bg-violet-500/[0.16] disabled:opacity-50"
+                              aria-label={`Add ${coin.name}`}
+                            >
+                              {updatingAssetId ===
+                              coin.id ? (
+                                <LoaderCircle
+                                  size={14}
+                                  className="animate-spin"
+                                />
+                              ) : (
+                                <Plus size={14} />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-white/[0.05] hover:text-white"
-            aria-label="More market options"
+            onClick={fetchPrices}
+            disabled={isLoading}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Refresh market prices"
           >
-            <MoreHorizontal size={18} />
+            <RefreshCw
+              size={15}
+              className={
+                isLoading ? 'animate-spin' : ''
+              }
+            />
           </button>
         </div>
-  
-        <div className="divide-y divide-white/[0.07]">
-          {coins.map((coin) => {
-            const Icon = coin.icon
-  
-            return (
+      </div>
+
+      <div className="p-3">
+        {isLoading && prices.length === 0 && (
+          <div className="space-y-2">
+            {[1, 2, 3].map((item) => (
               <div
-                key={coin.id}
-                className="group grid grid-cols-[1fr_auto] items-center gap-4 py-5 first:pt-0 last:pb-0 sm:grid-cols-[1fr_130px_130px]"
+                key={item}
+                className="flex animate-pulse items-center justify-between rounded-2xl px-4 py-4"
               >
-                <div className="flex min-w-0 items-center gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-slate-300 transition group-hover:border-violet-400/20 group-hover:text-violet-200">
-                    <Icon size={20} />
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-xl bg-white/[0.06]" />
+
+                  <div>
+                    <div className="h-4 w-24 rounded bg-white/[0.06]" />
+                    <div className="mt-2 h-3 w-12 rounded bg-white/[0.04]" />
                   </div>
-  
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate font-semibold text-white">
-                        {coin.name}
-                      </p>
-  
-                      <span className="text-xs font-medium text-slate-600">
-                        {coin.symbol}
-                      </span>
+                </div>
+
+                <div className="text-right">
+                  <div className="ml-auto h-4 w-20 rounded bg-white/[0.06]" />
+                  <div className="mt-2 ml-auto h-3 w-14 rounded bg-white/[0.04]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && !isLoading && (
+          <div className="m-3 rounded-2xl border border-rose-400/20 bg-rose-400/[0.07] px-4 py-4">
+            <p className="text-sm text-rose-200">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={fetchPrices}
+              className="mt-3 text-sm font-medium text-rose-300 transition hover:text-rose-200"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!isLoading &&
+          !error &&
+          prices.length === 0 && (
+            <div className="px-4 py-10 text-center">
+              <p className="text-sm text-slate-400">
+                No assets selected yet.
+              </p>
+
+              <p className="mt-1 text-xs text-slate-600">
+                Use Add asset to start building your
+                watchlist.
+              </p>
+            </div>
+          )}
+
+        {prices.length > 0 && (
+          <div className="space-y-1">
+            {prices.map((coin) => {
+              const fixedDetails =
+                coinDetails[coin.id]
+
+              const dynamic =
+                dynamicDetails[coin.id]
+
+              const details = fixedDetails
+                ? {
+                    ...fixedDetails,
+                    image: undefined,
+                  }
+                : {
+                    name:
+                      dynamic?.name ||
+                      formatCoinName(coin.id),
+                    symbol:
+                      dynamic?.symbol ||
+                      coin.id.toUpperCase(),
+                    shortName:
+                      (
+                        dynamic?.symbol ||
+                        coin.id
+                      )
+                        .charAt(0)
+                        .toUpperCase(),
+                    image: dynamic?.image,
+                  }
+
+              const isPositive =
+                coin.change24h >= 0
+
+              const isRemoving =
+                updatingAssetId === coin.id
+
+              return (
+                <div
+                  key={coin.id}
+                  className="group flex items-center justify-between rounded-2xl px-4 py-4 transition hover:bg-white/[0.035]"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(`/coin/${coin.id}`)
+                    }
+                    className="flex min-w-0 items-center gap-3 text-left"
+                  >
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] text-base font-semibold text-white">
+                      {'image' in details &&
+                      details.image ? (
+                        <img
+                          src={details.image}
+                          alt={details.name}
+                          className="h-8 w-8 object-contain"
+                        />
+                      ) : (
+                        details.shortName
+                      )}
                     </div>
-  
-                    <div className="mt-1 flex items-center gap-2 sm:hidden">
-                      <p className="font-medium">{coin.price}</p>
-  
-                      <span
-                        className={`flex items-center text-xs font-medium ${
-                          coin.positive
-                            ? 'text-emerald-300'
-                            : 'text-rose-300'
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white transition group-hover:text-violet-200">
+                        {details.name}
+                      </p>
+
+                      <p className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-600">
+                        {details.symbol}
+                      </p>
+                    </div>
+                  </button>
+
+                  <div className="ml-4 flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(`/coin/${coin.id}`)
+                      }
+                      className="text-right"
+                    >
+                      <p className="text-sm font-semibold text-white">
+                        {formatPrice(coin.price)}
+                      </p>
+
+                      <div
+                        className={`mt-1 flex items-center justify-end gap-1 text-xs font-medium ${
+                          isPositive
+                            ? 'text-emerald-400'
+                            : 'text-rose-400'
                         }`}
                       >
-                        {coin.positive ? (
+                        {isPositive ? (
                           <ArrowUpRight size={13} />
                         ) : (
                           <ArrowDownRight size={13} />
                         )}
-  
-                        {coin.change}
-                      </span>
-                    </div>
+
+                        {Math.abs(
+                          coin.change24h,
+                        ).toFixed(2)}
+                        %
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleRemoveAsset(coin.id)
+                      }
+                      disabled={isRemoving}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 opacity-0 transition hover:bg-rose-400/[0.08] hover:text-rose-400 group-hover:opacity-100 disabled:opacity-50"
+                      aria-label={`Remove ${details.name}`}
+                      title="Remove from Market Watch"
+                    >
+                      {isRemoving ? (
+                        <LoaderCircle
+                          size={14}
+                          className="animate-spin"
+                        />
+                      ) : (
+                        <X size={15} />
+                      )}
+                    </button>
                   </div>
                 </div>
-  
-                <div className="hidden justify-center sm:flex">
-                  <Sparkline
-                    points={coin.sparkline}
-                    positive={coin.positive}
-                  />
-                </div>
-  
-                <div className="hidden text-right sm:block">
-                  <p className="font-semibold text-white">
-                    {coin.price}
-                  </p>
-  
-                  <p
-                    className={`mt-1 flex items-center justify-end text-sm font-medium ${
-                      coin.positive
-                        ? 'text-emerald-300'
-                        : 'text-rose-300'
-                    }`}
-                  >
-                    {coin.positive ? (
-                      <ArrowUpRight size={14} />
-                    ) : (
-                      <ArrowDownRight size={14} />
-                    )}
-  
-                    {coin.change}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-  
-        <button
-          type="button"
-          className="mt-7 w-full rounded-2xl border border-white/[0.08] bg-white/[0.025] py-3 text-sm font-medium text-slate-400 transition hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white"
-        >
-          View full market
-        </button>
-      </section>
-    )
-  }
-  
-  export default CoinPricesCard
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-white/[0.06] px-6 py-4">
+        <p className="text-xs text-slate-600">
+          Live market data powered by CoinGecko
+        </p>
+      </div>
+    </section>
+  )
+}
+
+export default CoinPricesCard

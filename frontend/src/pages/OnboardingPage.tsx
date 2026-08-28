@@ -14,6 +14,7 @@ import {
 
 import InvestorStyleStep from '../components/onboarding/InvestorStyleStep'
 import ContentPreferencesStep from '../components/onboarding/ContentPreferencesStep'
+import { saveOnboardingPreferences } from '../services/onboardingService'
 
 const assets = [
   { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', icon: Bitcoin },
@@ -30,6 +31,8 @@ function OnboardingPage() {
   const [selectedAssets, setSelectedAssets] = useState<string[]>([])
   const [investorStyle, setInvestorStyle] = useState('')
   const [selectedContent, setSelectedContent] = useState<string[]>([])
+  const [error, setError] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
   const toggleAsset = (assetId: string) => {
     setSelectedAssets((current) =>
@@ -47,13 +50,51 @@ function OnboardingPage() {
     )
   }
 
-  const goToNextStep = () => {
+  const finishOnboarding = async () => {
+    setError('')
+    setIsSaving(true)
+
+    try {
+      const response = await saveOnboardingPreferences({
+        assets: selectedAssets,
+        investorStyle,
+        contentPreferences: selectedContent,
+      })
+
+      const existingUser = localStorage.getItem('blockmind_user')
+
+      if (existingUser) {
+        const parsedUser = JSON.parse(existingUser)
+
+        localStorage.setItem(
+          'blockmind_user',
+          JSON.stringify({
+            ...parsedUser,
+            onboardingCompleted: true,
+            preferences: response.user.preferences,
+          }),
+        )
+      }
+
+      navigate('/dashboard')
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Failed to save your preferences')
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const goToNextStep = async () => {
     if (currentStep < 3) {
       setCurrentStep((step) => step + 1)
       return
     }
 
-    navigate('/dashboard')
+    await finishOnboarding()
   }
 
   const goToPreviousStep = () => {
@@ -66,6 +107,10 @@ function OnboardingPage() {
   }
 
   const isContinueDisabled = () => {
+    if (isSaving) {
+      return true
+    }
+
     if (currentStep === 1) {
       return selectedAssets.length === 0
     }
@@ -239,11 +284,18 @@ function OnboardingPage() {
           />
         )}
 
+        {error && (
+          <div className="mt-8 rounded-2xl border border-rose-400/20 bg-rose-400/[0.08] px-4 py-3 text-sm text-rose-200">
+            {error}
+          </div>
+        )}
+
         <div className="mt-12 flex items-center justify-between border-t border-white/[0.07] pt-8">
           <button
             type="button"
             onClick={goToPreviousStep}
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-500 transition hover:bg-white/[0.03] hover:text-white"
+            disabled={isSaving}
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-500 transition hover:bg-white/[0.03] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowLeft size={17} />
             Back
@@ -284,14 +336,20 @@ function OnboardingPage() {
               type="button"
               onClick={goToNextStep}
               disabled={isContinueDisabled()}
-              className="group flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3.5 font-medium text-white shadow-[0_15px_40px_rgba(91,33,182,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_50px_rgba(91,33,182,0.32)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:translate-y-0 disabled:hover:shadow-[0_15px_40px_rgba(91,33,182,0.22)]"
+              className="group flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3.5 font-medium text-white shadow-[0_15px_40px_rgba(91,33,182,0.22)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_50px_rgba(91,33,182,0.32)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:translate-y-0"
             >
-              {currentStep === 3 ? 'Finish setup' : 'Continue'}
+              {currentStep === 3
+                ? isSaving
+                  ? 'Saving your profile...'
+                  : 'Finish setup'
+                : 'Continue'}
 
-              <ArrowRight
-                size={18}
-                className="transition group-hover:translate-x-1"
-              />
+              {!isSaving && (
+                <ArrowRight
+                  size={18}
+                  className="transition group-hover:translate-x-1"
+                />
+              )}
             </button>
           </div>
         </div>

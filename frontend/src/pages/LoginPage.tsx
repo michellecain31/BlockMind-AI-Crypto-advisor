@@ -1,6 +1,58 @@
-import { Link } from 'react-router-dom'
-import { ArrowRight, BrainCircuit, ShieldCheck, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import {
+  ArrowRight,
+  BrainCircuit,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react'
+
+import { loginUser } from '../services/authService'
+
 function LoginPage() {
+  const navigate = useNavigate()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await loginUser({
+        email,
+        password,
+      })
+
+      localStorage.setItem('blockmind_token', response.token)
+      localStorage.setItem(
+        'blockmind_user',
+        JSON.stringify(response.user),
+      )
+
+      if (response.user.onboardingCompleted) {
+        navigate('/dashboard')
+      } else {
+        navigate('/onboarding')
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Something went wrong')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#070B14] text-white">
       <div className="grid min-h-screen lg:grid-cols-2">
@@ -38,16 +90,30 @@ function LoginPage() {
 
               <div className="mt-10 grid max-w-lg grid-cols-2 gap-4">
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-                  <Sparkles className="mb-4 text-violet-300" size={20} />
-                  <p className="font-medium">Personalized insights</p>
+                  <Sparkles
+                    className="mb-4 text-violet-300"
+                    size={20}
+                  />
+
+                  <p className="font-medium">
+                    Personalized insights
+                  </p>
+
                   <p className="mt-1 text-sm text-slate-500">
                     Content tailored to your interests
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-                  <ShieldCheck className="mb-4 text-blue-300" size={20} />
-                  <p className="font-medium">Focused dashboard</p>
+                  <ShieldCheck
+                    className="mb-4 text-blue-300"
+                    size={20}
+                  />
+
+                  <p className="font-medium">
+                    Focused dashboard
+                  </p>
+
                   <p className="mt-1 text-sm text-slate-500">
                     Signal over market noise
                   </p>
@@ -69,7 +135,10 @@ function LoginPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/10">
                 <BrainCircuit size={20} />
               </div>
-              <span className="text-xl font-semibold">BlockMind</span>
+
+              <span className="text-xl font-semibold">
+                BlockMind
+              </span>
             </div>
 
             <div className="mb-8">
@@ -86,7 +155,10 @@ function LoginPage() {
               </p>
             </div>
 
-            <form className="space-y-5">
+            <form
+              className="space-y-5"
+              onSubmit={handleSubmit}
+            >
               <div>
                 <label
                   htmlFor="email"
@@ -98,7 +170,10 @@ function LoginPage() {
                 <input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
+                  required
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:bg-white/[0.06] focus:ring-4 focus:ring-violet-500/10"
                 />
               </div>
@@ -123,41 +198,58 @@ function LoginPage() {
                 <input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
                   placeholder="Enter your password"
+                  required
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:bg-white/[0.06] focus:ring-4 focus:ring-violet-500/10"
                 />
               </div>
 
+              {error && (
+                <div className="rounded-2xl border border-rose-400/20 bg-rose-400/[0.08] px-4 py-3 text-sm text-rose-200">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-3.5 font-medium text-white shadow-[0_18px_50px_rgba(91,33,182,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(91,33,182,0.35)]"
+                disabled={isLoading}
+                className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-3.5 font-medium text-white shadow-[0_18px_50px_rgba(91,33,182,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(91,33,182,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
-                Sign in
-                <ArrowRight
-                  size={18}
-                  className="transition group-hover:translate-x-1"
-                />
+                {isLoading ? 'Signing in...' : 'Sign in'}
+
+                {!isLoading && (
+                  <ArrowRight
+                    size={18}
+                    className="transition group-hover:translate-x-1"
+                  />
+                )}
               </button>
             </form>
 
             <div className="my-8 flex items-center gap-4">
               <div className="h-px flex-1 bg-white/10" />
+
               <span className="text-xs uppercase tracking-[0.18em] text-slate-600">
                 New here?
               </span>
+
               <div className="h-px flex-1 bg-white/10" />
             </div>
 
             <Link
-  to="/signup"
-  className="block w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-center font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/[0.06]"
->
-  Create an account
-</Link>
+              to="/signup"
+              className="block w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-center font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/[0.06]"
+            >
+              Create an account
+            </Link>
 
             <p className="mt-8 text-center text-xs leading-5 text-slate-600">
-              By continuing, you agree to BlockMind&apos;s Terms and Privacy
-              Policy.
+              By continuing, you agree to BlockMind&apos;s Terms and
+              Privacy Policy.
             </p>
           </div>
         </section>
