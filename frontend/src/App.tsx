@@ -1,4 +1,9 @@
-import type { ReactNode } from 'react'
+import {
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react'
+
 import {
   Navigate,
   Route,
@@ -12,6 +17,8 @@ import OnboardingPage from './pages/OnboardingPage'
 import SettingsPage from './pages/SettingsPage'
 import SignupPage from './pages/SignupPage'
 
+import { validateToken } from './services/authService'
+
 type ProtectedRouteProps = {
   children: ReactNode
 }
@@ -19,11 +26,54 @@ type ProtectedRouteProps = {
 function ProtectedRoute({
   children,
 }: ProtectedRouteProps) {
-  const token = localStorage.getItem(
-    'blockmind_token',
-  )
+  const [isChecking, setIsChecking] =
+    useState(true)
 
-  if (!token) {
+  const [isAuthenticated, setIsAuthenticated] =
+    useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const checkAuthentication = async () => {
+      const isValid = await validateToken()
+
+      if (!isMounted) {
+        return
+      }
+
+      if (!isValid) {
+        localStorage.removeItem(
+          'blockmind_token',
+        )
+
+        localStorage.removeItem(
+          'blockmind_user',
+        )
+      }
+
+      setIsAuthenticated(isValid)
+      setIsChecking(false)
+    }
+
+    void checkAuthentication()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#070B14] text-white">
+        <div className="text-sm text-slate-400">
+          Checking session...
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
     return (
       <Navigate
         to="/login"
