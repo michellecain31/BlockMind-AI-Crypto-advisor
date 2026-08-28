@@ -1,9 +1,20 @@
 import { useEffect, useState } from 'react'
+
 import {
   ArrowUpRight,
   Newspaper,
   RefreshCw,
+  ThumbsDown,
+  ThumbsUp,
 } from 'lucide-react'
+
+import { API_URL } from '../../services/api'
+
+import {
+  getFeedback,
+  saveFeedback,
+  type FeedbackVote,
+} from '../../services/feedbackService'
 
 type NewsItem = {
   title: string
@@ -16,15 +27,27 @@ type MarketNewsCardProps = {
   refreshKey: number
 }
 
+const NEWS_FEEDBACK_ID =
+  'market-news-section-v1'
+
 function MarketNewsCard({
   refreshKey,
 }: MarketNewsCardProps) {
   const [news, setNews] = useState<NewsItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] =
+    useState(true)
   const [error, setError] = useState('')
 
+  const [feedbackVote, setFeedbackVote] =
+    useState<FeedbackVote | null>(null)
+
+  const [isSavingFeedback, setIsSavingFeedback] =
+    useState(false)
+
   const fetchNews = async () => {
-    const token = localStorage.getItem('blockmind_token')
+    const token = localStorage.getItem(
+      'blockmind_token',
+    )
 
     if (!token) {
       setError('You must be logged in.')
@@ -37,7 +60,7 @@ function MarketNewsCard({
 
     try {
       const response = await fetch(
-        'http://localhost:5050/api/news',
+        `${API_URL}/news`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -49,7 +72,8 @@ function MarketNewsCard({
 
       if (!response.ok) {
         throw new Error(
-          data.message || 'Failed to load market news',
+          data.message ||
+            'Failed to load market news',
         )
       }
 
@@ -69,6 +93,49 @@ function MarketNewsCard({
     fetchNews()
   }, [refreshKey])
 
+  useEffect(() => {
+    const loadFeedback = async () => {
+      try {
+        const result = await getFeedback(
+          'market-news',
+          NEWS_FEEDBACK_ID,
+        )
+
+        setFeedbackVote(result.vote)
+      } catch (error) {
+        console.error(
+          'Failed to load market news feedback:',
+          error,
+        )
+      }
+    }
+
+    loadFeedback()
+  }, [])
+
+  const handleFeedback = async (
+    vote: FeedbackVote,
+  ) => {
+    try {
+      setIsSavingFeedback(true)
+
+      await saveFeedback({
+        contentType: 'market-news',
+        contentId: NEWS_FEEDBACK_ID,
+        vote,
+      })
+
+      setFeedbackVote(vote)
+    } catch (error) {
+      console.error(
+        'Failed to save market news feedback:',
+        error,
+      )
+    } finally {
+      setIsSavingFeedback(false)
+    }
+  }
+
   const formatDate = (date?: string) => {
     if (!date) {
       return 'Recently'
@@ -81,6 +148,7 @@ function MarketNewsCard({
     }
 
     const now = new Date()
+
     const difference =
       now.getTime() - parsedDate.getTime()
 
@@ -112,10 +180,13 @@ function MarketNewsCard({
       return `${days}d ago`
     }
 
-    return parsedDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
+    return parsedDate.toLocaleDateString(
+      'en-US',
+      {
+        month: 'short',
+        day: 'numeric',
+      },
+    )
   }
 
   return (
@@ -146,7 +217,9 @@ function MarketNewsCard({
         >
           <RefreshCw
             size={15}
-            className={isLoading ? 'animate-spin' : ''}
+            className={
+              isLoading ? 'animate-spin' : ''
+            }
           />
         </button>
       </div>
@@ -197,45 +270,89 @@ function MarketNewsCard({
 
         {news.length > 0 && (
           <div className="space-y-1">
-            {news.slice(0, 5).map((article, index) => (
-              <a
-                key={`${article.url}-${index}`}
-                href={article.url}
-                target="_blank"
-                rel="noreferrer"
-                className="group flex items-start justify-between gap-4 rounded-2xl px-4 py-4 transition hover:bg-white/[0.035]"
-              >
-                <div className="min-w-0">
-                  <h3 className="line-clamp-2 text-sm font-medium leading-6 text-slate-200 transition group-hover:text-white">
-                    {article.title}
-                  </h3>
+            {news
+              .slice(0, 5)
+              .map((article, index) => (
+                <a
+                  key={`${article.url}-${index}`}
+                  href={article.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-start justify-between gap-4 rounded-2xl px-4 py-4 transition hover:bg-white/[0.035]"
+                >
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-2 text-sm font-medium leading-6 text-slate-200 transition group-hover:text-white">
+                      {article.title}
+                    </h3>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                    <span className="font-medium text-slate-500">
-                      {article.source}
-                    </span>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                      <span className="font-medium text-slate-500">
+                        {article.source}
+                      </span>
 
-                    <span>•</span>
+                      <span>•</span>
 
-                    <span>
-                      {formatDate(article.publishedAt)}
-                    </span>
+                      <span>
+                        {formatDate(
+                          article.publishedAt,
+                        )}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.025] text-slate-600 transition group-hover:border-white/10 group-hover:text-violet-300">
-                  <ArrowUpRight size={14} />
-                </div>
-              </a>
-            ))}
+                  <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.025] text-slate-600 transition group-hover:border-white/10 group-hover:text-violet-300">
+                    <ArrowUpRight size={14} />
+                  </div>
+                </a>
+              ))}
           </div>
         )}
       </div>
 
-      <div className="border-t border-white/[0.06] px-6 py-4">
+      <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] px-6 py-4">
         <p className="text-xs text-slate-600">
           Latest headlines from CoinDesk
         </p>
+
+        <div className="flex items-center gap-2">
+          <span className="mr-1 hidden text-xs text-slate-600 sm:inline">
+            Useful?
+          </span>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleFeedback('like')
+            }
+            disabled={isSavingFeedback}
+            aria-label="Like market news"
+            title="Show me more like this"
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              feedbackVote === 'like'
+                ? 'border-emerald-400/30 bg-emerald-400/[0.12] text-emerald-300'
+                : 'border-white/[0.08] bg-white/[0.025] text-slate-500 hover:border-emerald-400/20 hover:bg-emerald-400/[0.07] hover:text-emerald-300'
+            }`}
+          >
+            <ThumbsUp size={14} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleFeedback('dislike')
+            }
+            disabled={isSavingFeedback}
+            aria-label="Dislike market news"
+            title="Show me less like this"
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              feedbackVote === 'dislike'
+                ? 'border-rose-400/30 bg-rose-400/[0.12] text-rose-300'
+                : 'border-white/[0.08] bg-white/[0.025] text-slate-500 hover:border-rose-400/20 hover:bg-rose-400/[0.07] hover:text-rose-300'
+            }`}
+          >
+            <ThumbsDown size={14} />
+          </button>
+        </div>
       </div>
     </section>
   )

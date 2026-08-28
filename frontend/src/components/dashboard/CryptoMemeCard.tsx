@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
+
 import {
   Laugh,
   RefreshCw,
   ThumbsDown,
   ThumbsUp,
 } from 'lucide-react'
+
+import { API_URL } from '../../services/api'
 
 import {
   getFeedback,
@@ -20,13 +23,24 @@ type Meme = {
 }
 
 function CryptoMemeCard() {
-  const [meme, setMeme] = useState<Meme | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [vote, setVote] = useState<FeedbackVote | null>(null)
-  const [isSavingVote, setIsSavingVote] = useState(false)
+  const [meme, setMeme] = useState<Meme | null>(
+    null,
+  )
 
-  const loadFeedback = async (memeId: string) => {
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [error, setError] = useState('')
+
+  const [vote, setVote] =
+    useState<FeedbackVote | null>(null)
+
+  const [isSavingVote, setIsSavingVote] =
+    useState(false)
+
+  const loadFeedback = async (
+    memeId: string,
+  ) => {
     try {
       const result = await getFeedback(
         'meme',
@@ -45,7 +59,9 @@ function CryptoMemeCard() {
   }
 
   const fetchMeme = async () => {
-    const token = localStorage.getItem('blockmind_token')
+    const token = localStorage.getItem(
+      'blockmind_token',
+    )
 
     if (!token) {
       setError('You must be logged in.')
@@ -59,7 +75,7 @@ function CryptoMemeCard() {
 
     try {
       const response = await fetch(
-        'http://localhost:5050/api/memes/random',
+        `${API_URL}/memes/random`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -71,7 +87,8 @@ function CryptoMemeCard() {
 
       if (!response.ok) {
         throw new Error(
-          data.message || 'Failed to load meme',
+          data.message ||
+            'Failed to load meme',
         )
       }
 
@@ -153,7 +170,9 @@ function CryptoMemeCard() {
           >
             <RefreshCw
               size={16}
-              className={isLoading ? 'animate-spin' : ''}
+              className={
+                isLoading ? 'animate-spin' : ''
+              }
             />
           </button>
         </div>
@@ -163,8 +182,11 @@ function CryptoMemeCard() {
             {isLoading && !meme && (
               <div className="w-full max-w-md animate-pulse text-center">
                 <div className="mx-auto h-4 w-28 rounded bg-white/[0.06]" />
+
                 <div className="mx-auto mt-6 h-16 w-16 rounded-2xl bg-white/[0.06]" />
+
                 <div className="mx-auto mt-6 h-7 w-72 max-w-full rounded bg-white/[0.06]" />
+
                 <div className="mx-auto mt-4 h-5 w-80 max-w-full rounded bg-white/[0.04]" />
               </div>
             )}
@@ -214,8 +236,12 @@ function CryptoMemeCard() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleVote('like')}
-                disabled={!meme || isSavingVote}
+                onClick={() =>
+                  handleVote('like')
+                }
+                disabled={
+                  !meme || isSavingVote
+                }
                 aria-label="Like meme"
                 className={`flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50 ${
                   vote === 'like'
@@ -228,8 +254,12 @@ function CryptoMemeCard() {
 
               <button
                 type="button"
-                onClick={() => handleVote('dislike')}
-                disabled={!meme || isSavingVote}
+                onClick={() =>
+                  handleVote('dislike')
+                }
+                disabled={
+                  !meme || isSavingVote
+                }
                 aria-label="Dislike meme"
                 className={`flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50 ${
                   vote === 'dislike'

@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5050/api'
+import { API_URL } from './api'
 
 export type AuthUser = {
   id: string
@@ -24,11 +24,15 @@ type LoginData = {
   password: string
 }
 
-const handleResponse = async (response: Response) => {
+const handleResponse = async (
+  response: Response,
+) => {
   const data = await response.json()
 
   if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong')
+    throw new Error(
+      data.message || 'Something went wrong',
+    )
   }
 
   return data
@@ -37,13 +41,16 @@ const handleResponse = async (response: Response) => {
 export const registerUser = async (
   formData: RegisterData,
 ): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `${API_URL}/auth/register`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
     },
-    body: JSON.stringify(formData),
-  })
+  )
 
   return handleResponse(response)
 }
@@ -51,13 +58,16 @@ export const registerUser = async (
 export const loginUser = async (
   formData: LoginData,
 ): Promise<AuthResponse> => {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const response = await fetch(
+    `${API_URL}/auth/login`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
     },
-    body: JSON.stringify(formData),
-  })
+  )
 
   return handleResponse(response)
 }

@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import {
+  useNavigate,
+  useParams,
+} from 'react-router-dom'
+
+import { API_URL } from '../services/api'
+
 import {
   ArrowDownRight,
   ArrowLeft,
@@ -48,8 +54,7 @@ function CoinDetailsPage() {
   const [isLoading, setIsLoading] =
     useState(true)
 
-  const [error, setError] =
-    useState('')
+  const [error, setError] = useState('')
 
   const [isFollowing, setIsFollowing] =
     useState(false)
@@ -62,7 +67,9 @@ function CoinDetailsPage() {
 
   useEffect(() => {
     const storedUser =
-      localStorage.getItem('blockmind_user')
+      localStorage.getItem(
+        'blockmind_user',
+      )
 
     if (!storedUser || !coinId) {
       return
@@ -114,7 +121,7 @@ function CoinDetailsPage() {
         setError('')
 
         const response = await fetch(
-          `http://localhost:5050/api/coins/${encodeURIComponent(
+          `${API_URL}/coins/${encodeURIComponent(
             coinId,
           )}`,
           {
@@ -125,7 +132,8 @@ function CoinDetailsPage() {
           },
         )
 
-        const data = await response.json()
+        const data =
+          await response.json()
 
         if (!response.ok) {
           throw new Error(
@@ -217,7 +225,7 @@ function CoinDetailsPage() {
 
         const response = isFollowing
           ? await fetch(
-              `http://localhost:5050/api/assets/${encodeURIComponent(
+              `${API_URL}/assets/${encodeURIComponent(
                 coin.id,
               )}`,
               {
@@ -229,7 +237,7 @@ function CoinDetailsPage() {
               },
             )
           : await fetch(
-              'http://localhost:5050/api/assets',
+              `${API_URL}/assets`,
               {
                 method: 'POST',
                 headers: {
@@ -244,7 +252,8 @@ function CoinDetailsPage() {
               },
             )
 
-        const data = await response.json()
+        const data =
+          await response.json()
 
         if (!response.ok) {
           throw new Error(

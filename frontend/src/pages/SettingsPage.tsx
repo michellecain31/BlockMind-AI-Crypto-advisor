@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+import { API_URL } from '../services/api'
+
 import {
   ArrowLeft,
   Bitcoin,
@@ -145,8 +148,7 @@ function SettingsPage() {
   const [isSaving, setIsSaving] =
     useState(false)
 
-  const [error, setError] =
-    useState('')
+  const [error, setError] = useState('')
 
   const [successMessage, setSuccessMessage] =
     useState('')
@@ -221,7 +223,7 @@ function SettingsPage() {
               async (assetId) => {
                 const response =
                   await fetch(
-                    `http://localhost:5050/api/coins/${encodeURIComponent(
+                    `${API_URL}/coins/${encodeURIComponent(
                       assetId,
                     )}`,
                     {
@@ -284,58 +286,44 @@ function SettingsPage() {
   const toggleAsset = (
     assetId: string,
   ) => {
-    setSelectedAssets(
-      (current) =>
-        current.includes(assetId)
-          ? current.filter(
-              (id) =>
-                id !== assetId,
-            )
-          : [
-              ...current,
-              assetId,
-            ],
+    setSelectedAssets((current) =>
+      current.includes(assetId)
+        ? current.filter(
+            (id) => id !== assetId,
+          )
+        : [...current, assetId],
     )
   }
 
   const removeAdditionalAsset = (
     assetId: string,
   ) => {
-    setSelectedAssets(
-      (current) =>
-        current.filter(
-          (id) =>
-            id !== assetId,
-        ),
+    setSelectedAssets((current) =>
+      current.filter(
+        (id) => id !== assetId,
+      ),
     )
 
-    setAdditionalAssets(
-      (current) => {
-        const updated = {
-          ...current,
-        }
+    setAdditionalAssets((current) => {
+      const updated = {
+        ...current,
+      }
 
-        delete updated[assetId]
+      delete updated[assetId]
 
-        return updated
-      },
-    )
+      return updated
+    })
   }
 
   const toggleContent = (
     contentId: string,
   ) => {
-    setSelectedContent(
-      (current) =>
-        current.includes(contentId)
-          ? current.filter(
-              (id) =>
-                id !== contentId,
-            )
-          : [
-              ...current,
-              contentId,
-            ],
+    setSelectedContent((current) =>
+      current.includes(contentId)
+        ? current.filter(
+            (id) => id !== contentId,
+          )
+        : [...current, contentId],
     )
   }
 
@@ -343,9 +331,7 @@ function SettingsPage() {
     setError('')
     setSuccessMessage('')
 
-    if (
-      selectedAssets.length === 0
-    ) {
+    if (selectedAssets.length === 0) {
       setError(
         'Please select at least one asset.',
       )
@@ -359,9 +345,7 @@ function SettingsPage() {
       return
     }
 
-    if (
-      selectedContent.length === 0
-    ) {
+    if (selectedContent.length === 0) {
       setError(
         'Please select at least one content preference.',
       )
@@ -372,15 +356,12 @@ function SettingsPage() {
 
     try {
       const response =
-        await saveOnboardingPreferences(
-          {
-            assets:
-              selectedAssets,
-            investorStyle,
-            contentPreferences:
-              selectedContent,
-          },
-        )
+        await saveOnboardingPreferences({
+          assets: selectedAssets,
+          investorStyle,
+          contentPreferences:
+            selectedContent,
+        })
 
       const storedUser =
         localStorage.getItem(
@@ -410,9 +391,7 @@ function SettingsPage() {
         'Your preferences were updated.',
       )
     } catch (error) {
-      if (
-        error instanceof Error
-      ) {
+      if (error instanceof Error) {
         setError(error.message)
       } else {
         setError(
@@ -434,9 +413,7 @@ function SettingsPage() {
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5 sm:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05]">
-              <BrainCircuit
-                size={20}
-              />
+              <BrainCircuit size={20} />
             </div>
 
             <span className="text-lg font-semibold">
@@ -447,15 +424,11 @@ function SettingsPage() {
           <button
             type="button"
             onClick={() =>
-              navigate(
-                '/dashboard',
-              )
+              navigate('/dashboard')
             }
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
           >
-            <ArrowLeft
-              size={17}
-            />
+            <ArrowLeft size={17} />
             Dashboard
           </button>
         </div>
@@ -468,15 +441,12 @@ function SettingsPage() {
           </p>
 
           <h1 className="text-4xl font-semibold tracking-tight">
-            Your BlockMind
-            settings
+            Your BlockMind settings
           </h1>
 
           <p className="mt-3 max-w-2xl text-slate-400">
-            Update the assets
-            and content that
-            shape your
-            dashboard.
+            Update the assets and content that shape
+            your dashboard.
           </p>
         </div>
 
@@ -487,76 +457,59 @@ function SettingsPage() {
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              These assets
-              control the prices
-              and personalized
-              news shown on your
+              These assets control the prices and
+              personalized news shown on your
               dashboard.
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {assets.map(
-              (asset) => {
-                const Icon =
-                  asset.icon
+            {assets.map((asset) => {
+              const Icon = asset.icon
 
-                const isSelected =
-                  selectedAssets.includes(
-                    asset.id,
-                  )
+              const isSelected =
+                selectedAssets.includes(
+                  asset.id,
+                )
 
-                return (
-                  <button
-                    key={
-                      asset.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      toggleAsset(
-                        asset.id,
-                      )
-                    }
-                    className={`relative flex items-center gap-4 rounded-2xl border p-5 text-left transition ${
-                      isSelected
-                        ? 'border-violet-400/40 bg-violet-500/[0.10]'
-                        : 'border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.045]'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
-                        <Check
-                          size={13}
-                          strokeWidth={
-                            3
-                          }
-                        />
-                      </div>
-                    )}
-
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
-                      <Icon
-                        size={20}
+              return (
+                <button
+                  key={asset.id}
+                  type="button"
+                  onClick={() =>
+                    toggleAsset(asset.id)
+                  }
+                  className={`relative flex items-center gap-4 rounded-2xl border p-5 text-left transition ${
+                    isSelected
+                      ? 'border-violet-400/40 bg-violet-500/[0.10]'
+                      : 'border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.045]'
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
+                      <Check
+                        size={13}
+                        strokeWidth={3}
                       />
                     </div>
+                  )}
 
-                    <div>
-                      <p className="font-medium">
-                        {
-                          asset.name
-                        }
-                      </p>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04]">
+                    <Icon size={20} />
+                  </div>
 
-                      <p className="mt-1 text-xs text-slate-500">
-                        {
-                          asset.symbol
-                        }
-                      </p>
-                    </div>
-                  </button>
-                )
-              },
-            )}
+                  <div>
+                    <p className="font-medium">
+                      {asset.name}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      {asset.symbol}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
           </div>
 
           {loadingAdditionalAssets && (
@@ -565,27 +518,21 @@ function SettingsPage() {
                 size={16}
                 className="animate-spin"
               />
-
-              Loading additional
-              assets...
+              Loading additional assets...
             </div>
           )}
 
           {!loadingAdditionalAssets &&
-            Object.keys(
-              additionalAssets,
-            ).length > 0 && (
+            Object.keys(additionalAssets)
+              .length > 0 && (
               <div className="mt-8 border-t border-white/[0.07] pt-7">
                 <div className="mb-5">
                   <h3 className="font-medium text-white">
-                    Additional
-                    assets
+                    Additional assets
                   </h3>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Assets you
-                    added from
-                    search or
+                    Assets you added from search or
                     Market Watch.
                   </p>
                 </div>
@@ -593,66 +540,48 @@ function SettingsPage() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {Object.values(
                     additionalAssets,
-                  ).map(
-                    (asset) => (
-                      <div
-                        key={
-                          asset.id
-                        }
-                        className="group relative flex items-center gap-4 rounded-2xl border border-violet-400/30 bg-violet-500/[0.07] p-5"
-                      >
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
-                          {asset.image ? (
-                            <img
-                              src={
-                                asset.image
-                              }
-                              alt={
-                                asset.name
-                              }
-                              className="h-8 w-8 object-contain"
-                            />
-                          ) : (
-                            <Coins
-                              size={
-                                20
-                              }
-                            />
-                          )}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">
-                            {
-                              asset.name
-                            }
-                          </p>
-
-                          <p className="mt-1 text-xs font-medium uppercase text-slate-500">
-                            {
-                              asset.symbol
-                            }
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removeAdditionalAsset(
-                              asset.id,
-                            )
-                          }
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-rose-400/[0.08] hover:text-rose-300"
-                          aria-label={`Remove ${asset.name}`}
-                          title="Remove asset"
-                        >
-                          <X
-                            size={15}
+                  ).map((asset) => (
+                    <div
+                      key={asset.id}
+                      className="group relative flex items-center gap-4 rounded-2xl border border-violet-400/30 bg-violet-500/[0.07] p-5"
+                    >
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+                        {asset.image ? (
+                          <img
+                            src={asset.image}
+                            alt={asset.name}
+                            className="h-8 w-8 object-contain"
                           />
-                        </button>
+                        ) : (
+                          <Coins size={20} />
+                        )}
                       </div>
-                    ),
-                  )}
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">
+                          {asset.name}
+                        </p>
+
+                        <p className="mt-1 text-xs font-medium uppercase text-slate-500">
+                          {asset.symbol}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeAdditionalAsset(
+                            asset.id,
+                          )
+                        }
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-rose-400/[0.08] hover:text-rose-300"
+                        aria-label={`Remove ${asset.name}`}
+                        title="Remove asset"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -665,130 +594,102 @@ function SettingsPage() {
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              Tell BlockMind how
-              you approach the
+              Tell BlockMind how you approach the
               market.
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {investorStyles.map(
-              (style) => {
-                const isSelected =
-                  investorStyle ===
-                  style.id
+            {investorStyles.map((style) => {
+              const isSelected =
+                investorStyle === style.id
 
-                return (
-                  <button
-                    key={
-                      style.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      setInvestorStyle(
-                        style.id,
-                      )
-                    }
-                    className={`relative rounded-2xl border p-5 text-left transition ${
-                      isSelected
-                        ? 'border-violet-400/40 bg-violet-500/[0.10]'
-                        : 'border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.045]'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
-                        <Check
-                          size={13}
-                          strokeWidth={
-                            3
-                          }
-                        />
-                      </div>
-                    )}
+              return (
+                <button
+                  key={style.id}
+                  type="button"
+                  onClick={() =>
+                    setInvestorStyle(style.id)
+                  }
+                  className={`relative rounded-2xl border p-5 text-left transition ${
+                    isSelected
+                      ? 'border-violet-400/40 bg-violet-500/[0.10]'
+                      : 'border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.045]'
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
+                      <Check
+                        size={13}
+                        strokeWidth={3}
+                      />
+                    </div>
+                  )}
 
-                    <p className="font-medium text-white">
-                      {
-                        style.title
-                      }
-                    </p>
+                  <p className="font-medium text-white">
+                    {style.title}
+                  </p>
 
-                    <p className="mt-2 pr-8 text-sm leading-6 text-slate-500">
-                      {
-                        style.description
-                      }
-                    </p>
-                  </button>
-                )
-              },
-            )}
+                  <p className="mt-2 pr-8 text-sm leading-6 text-slate-500">
+                    {style.description}
+                  </p>
+                </button>
+              )
+            })}
           </div>
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-white/[0.025] p-6 sm:p-8">
           <div className="mb-6">
             <h2 className="text-xl font-semibold">
-              Content
-              preferences
+              Content preferences
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              Choose what kind
-              of content matters
-              most to you.
+              Choose what kind of content matters most
+              to you.
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {contentOptions.map(
-              (content) => {
-                const isSelected =
-                  selectedContent.includes(
-                    content.id,
-                  )
-
-                return (
-                  <button
-                    key={
-                      content.id
-                    }
-                    type="button"
-                    onClick={() =>
-                      toggleContent(
-                        content.id,
-                      )
-                    }
-                    className={`relative rounded-2xl border p-5 text-left transition ${
-                      isSelected
-                        ? 'border-violet-400/40 bg-violet-500/[0.10]'
-                        : 'border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.045]'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
-                        <Check
-                          size={13}
-                          strokeWidth={
-                            3
-                          }
-                        />
-                      </div>
-                    )}
-
-                    <p className="font-medium text-white">
-                      {
-                        content.title
-                      }
-                    </p>
-
-                    <p className="mt-2 pr-6 text-sm leading-6 text-slate-500">
-                      {
-                        content.description
-                      }
-                    </p>
-                  </button>
+            {contentOptions.map((content) => {
+              const isSelected =
+                selectedContent.includes(
+                  content.id,
                 )
-              },
-            )}
+
+              return (
+                <button
+                  key={content.id}
+                  type="button"
+                  onClick={() =>
+                    toggleContent(content.id)
+                  }
+                  className={`relative rounded-2xl border p-5 text-left transition ${
+                    isSelected
+                      ? 'border-violet-400/40 bg-violet-500/[0.10]'
+                      : 'border-white/10 bg-white/[0.025] hover:border-white/20 hover:bg-white/[0.045]'
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500">
+                      <Check
+                        size={13}
+                        strokeWidth={3}
+                      />
+                    </div>
+                  )}
+
+                  <p className="font-medium text-white">
+                    {content.title}
+                  </p>
+
+                  <p className="mt-2 pr-6 text-sm leading-6 text-slate-500">
+                    {content.description}
+                  </p>
+                </button>
+              )
+            })}
           </div>
         </section>
 
@@ -811,9 +712,7 @@ function SettingsPage() {
             disabled={isSaving}
             className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3.5 font-medium text-white shadow-[0_15px_40px_rgba(91,33,182,0.20)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
           >
-            <Save
-              size={17}
-            />
+            <Save size={17} />
 
             {isSaving
               ? 'Saving...'

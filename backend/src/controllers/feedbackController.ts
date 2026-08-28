@@ -1,7 +1,20 @@
 import type { Response } from 'express'
 
 import type { AuthenticatedRequest } from '../middleware/authMiddleware.js'
+
 import Feedback from '../models/Feedback.js'
+
+const allowedContentTypes = [
+  'meme',
+  'ai-insight',
+  'market-news',
+  'coin-prices',
+]
+
+const allowedVotes = [
+  'like',
+  'dislike',
+]
 
 export const saveFeedback = async (
   req: AuthenticatedRequest,
@@ -25,14 +38,14 @@ export const saveFeedback = async (
     }
 
     if (
-      !['meme', 'ai-insight'].includes(contentType)
+      !allowedContentTypes.includes(contentType)
     ) {
       return res.status(400).json({
         message: 'Invalid content type',
       })
     }
 
-    if (!['like', 'dislike'].includes(vote)) {
+    if (!allowedVotes.includes(vote)) {
       return res.status(400).json({
         message: 'Invalid vote',
       })
@@ -87,6 +100,14 @@ export const getFeedback = async (
     ) {
       return res.status(400).json({
         message: 'Missing feedback parameters',
+      })
+    }
+
+    if (
+      !allowedContentTypes.includes(contentType)
+    ) {
+      return res.status(400).json({
+        message: 'Invalid content type',
       })
     }
 

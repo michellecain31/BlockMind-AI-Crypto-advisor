@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5050/api'
+import { API_URL } from './api'
 
 export type FeedbackVote =
   | 'like'
@@ -7,6 +7,8 @@ export type FeedbackVote =
 export type FeedbackContentType =
   | 'meme'
   | 'ai-insight'
+  | 'market-news'
+  | 'coin-prices'
 
 type SaveFeedbackData = {
   contentType: FeedbackContentType
@@ -29,12 +31,10 @@ export const saveFeedback = async (
     `${API_URL}/feedback`,
     {
       method: 'POST',
-
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-
       body: JSON.stringify(data),
     },
   )

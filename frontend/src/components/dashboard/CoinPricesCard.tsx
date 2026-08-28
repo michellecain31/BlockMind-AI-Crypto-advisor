@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -8,9 +12,19 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ThumbsDown,
+  ThumbsUp,
   TrendingUp,
   X,
 } from 'lucide-react'
+
+import { API_URL } from '../../services/api'
+
+import {
+  getFeedback,
+  saveFeedback,
+  type FeedbackVote,
+} from '../../services/feedbackService'
 
 type MarketPrice = {
   id: string
@@ -41,6 +55,9 @@ type StoredUser = {
 type CoinPricesCardProps = {
   refreshKey: number
 }
+
+const PRICES_FEEDBACK_ID =
+  'coin-prices-section-v1'
 
 const coinDetails: Record<
   string,
@@ -82,37 +99,64 @@ function CoinPricesCard({
 }: CoinPricesCardProps) {
   const navigate = useNavigate()
 
-  const [prices, setPrices] = useState<MarketPrice[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [prices, setPrices] = useState<
+    MarketPrice[]
+  >([])
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
   const [error, setError] = useState('')
 
-  const [isAddOpen, setIsAddOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<
-    SearchCoin[]
-  >([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [searchError, setSearchError] = useState('')
+  const [isAddOpen, setIsAddOpen] =
+    useState(false)
 
-  const [updatingAssetId, setUpdatingAssetId] = useState<
-    string | null
-  >(null)
+  const [searchQuery, setSearchQuery] =
+    useState('')
 
-  const [dynamicDetails, setDynamicDetails] = useState<
-    Record<
-      string,
-      {
-        name: string
-        symbol: string
-        image?: string
-      }
-    >
-  >({})
+  const [searchResults, setSearchResults] =
+    useState<SearchCoin[]>([])
 
-  const addMenuRef = useRef<HTMLDivElement>(null)
+  const [isSearching, setIsSearching] =
+    useState(false)
+
+  const [searchError, setSearchError] =
+    useState('')
+
+  const [
+    updatingAssetId,
+    setUpdatingAssetId,
+  ] = useState<string | null>(null)
+
+  const [
+    feedbackVote,
+    setFeedbackVote,
+  ] = useState<FeedbackVote | null>(null)
+
+  const [
+    isSavingFeedback,
+    setIsSavingFeedback,
+  ] = useState(false)
+
+  const [dynamicDetails, setDynamicDetails] =
+    useState<
+      Record<
+        string,
+        {
+          name: string
+          symbol: string
+          image?: string
+        }
+      >
+    >({})
+
+  const addMenuRef =
+    useRef<HTMLDivElement>(null)
 
   const fetchPrices = async () => {
-    const token = localStorage.getItem('blockmind_token')
+    const token = localStorage.getItem(
+      'blockmind_token',
+    )
 
     if (!token) {
       setError('You must be logged in.')
@@ -125,7 +169,7 @@ function CoinPricesCard({
 
     try {
       const response = await fetch(
-        'http://localhost:5050/api/market/prices',
+        `${API_URL}/market/prices`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -137,7 +181,8 @@ function CoinPricesCard({
 
       if (!response.ok) {
         throw new Error(
-          data.message || 'Failed to load market prices',
+          data.message ||
+            'Failed to load market prices',
         )
       }
 
@@ -146,7 +191,9 @@ function CoinPricesCard({
       if (error instanceof Error) {
         setError(error.message)
       } else {
-        setError('Failed to load market prices')
+        setError(
+          'Failed to load market prices',
+        )
       }
     } finally {
       setIsLoading(false)
@@ -158,10 +205,34 @@ function CoinPricesCard({
   }, [refreshKey])
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const loadFeedback = async () => {
+      try {
+        const result = await getFeedback(
+          'coin-prices',
+          PRICES_FEEDBACK_ID,
+        )
+
+        setFeedbackVote(result.vote)
+      } catch (error) {
+        console.error(
+          'Failed to load coin prices feedback:',
+          error,
+        )
+      }
+    }
+
+    loadFeedback()
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (
+      event: MouseEvent,
+    ) => {
       if (
         addMenuRef.current &&
-        !addMenuRef.current.contains(event.target as Node)
+        !addMenuRef.current.contains(
+          event.target as Node,
+        )
       ) {
         setIsAddOpen(false)
       }
@@ -190,75 +261,95 @@ function CoinPricesCard({
       return
     }
 
-    const timeoutId = window.setTimeout(async () => {
-      const token = localStorage.getItem(
-        'blockmind_token',
-      )
-
-      if (!token) {
-        return
-      }
-
-      try {
-        setIsSearching(true)
-        setSearchError('')
-
-        const response = await fetch(
-          `http://localhost:5050/api/search/coins?q=${encodeURIComponent(
-            query,
-          )}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        )
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(
-            data.message ||
-              'Failed to search cryptocurrencies',
+    const timeoutId = window.setTimeout(
+      async () => {
+        const token =
+          localStorage.getItem(
+            'blockmind_token',
           )
+
+        if (!token) {
+          return
         }
 
-        setSearchResults(data.coins || [])
-      } catch (error) {
-        console.error('Market Watch search error:', error)
+        try {
+          setIsSearching(true)
+          setSearchError('')
 
-        setSearchResults([])
-        setSearchError('Could not load search results.')
-      } finally {
-        setIsSearching(false)
-      }
-    }, 400)
+          const response = await fetch(
+            `${API_URL}/search/coins?q=${encodeURIComponent(
+              query,
+            )}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          )
+
+          const data =
+            await response.json()
+
+          if (!response.ok) {
+            throw new Error(
+              data.message ||
+                'Failed to search cryptocurrencies',
+            )
+          }
+
+          setSearchResults(
+            data.coins || [],
+          )
+        } catch (error) {
+          console.error(
+            'Market Watch search error:',
+            error,
+          )
+
+          setSearchResults([])
+
+          setSearchError(
+            'Could not load search results.',
+          )
+        } finally {
+          setIsSearching(false)
+        }
+      },
+      400,
+    )
 
     return () => {
       window.clearTimeout(timeoutId)
     }
   }, [searchQuery])
 
-  const updateLocalUserAssets = (assets: string[]) => {
-    const storedUser = localStorage.getItem(
-      'blockmind_user',
-    )
+  const updateLocalUserAssets = (
+    assets: string[],
+  ) => {
+    const storedUser =
+      localStorage.getItem(
+        'blockmind_user',
+      )
 
     if (!storedUser) {
       return
     }
 
     try {
-      const user = JSON.parse(storedUser) as StoredUser
+      const user = JSON.parse(
+        storedUser,
+      ) as StoredUser
 
       const updatedUser: StoredUser = {
         ...user,
         preferences: {
           assets,
           investorStyle:
-            user.preferences?.investorStyle,
+            user.preferences
+              ?.investorStyle,
           contentPreferences:
-            user.preferences?.contentPreferences || [],
+            user.preferences
+              ?.contentPreferences || [],
         },
       }
 
@@ -274,8 +365,12 @@ function CoinPricesCard({
     }
   }
 
-  const handleAddAsset = async (coin: SearchCoin) => {
-    const token = localStorage.getItem('blockmind_token')
+  const handleAddAsset = async (
+    coin: SearchCoin,
+  ) => {
+    const token = localStorage.getItem(
+      'blockmind_token',
+    )
 
     if (!token) {
       return
@@ -286,11 +381,12 @@ function CoinPricesCard({
       setSearchError('')
 
       const response = await fetch(
-        'http://localhost:5050/api/assets',
+        `${API_URL}/assets`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type':
+              'application/json',
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
@@ -303,11 +399,14 @@ function CoinPricesCard({
 
       if (!response.ok) {
         throw new Error(
-          data.message || 'Failed to add asset',
+          data.message ||
+            'Failed to add asset',
         )
       }
 
-      updateLocalUserAssets(data.assets || [])
+      updateLocalUserAssets(
+        data.assets || [],
+      )
 
       setDynamicDetails((current) => ({
         ...current,
@@ -324,12 +423,17 @@ function CoinPricesCard({
 
       await fetchPrices()
     } catch (error) {
-      console.error('Add asset error:', error)
+      console.error(
+        'Add asset error:',
+        error,
+      )
 
       if (error instanceof Error) {
         setSearchError(error.message)
       } else {
-        setSearchError('Failed to add asset')
+        setSearchError(
+          'Failed to add asset',
+        )
       }
     } finally {
       setUpdatingAssetId(null)
@@ -339,7 +443,9 @@ function CoinPricesCard({
   const handleRemoveAsset = async (
     assetId: string,
   ) => {
-    const token = localStorage.getItem('blockmind_token')
+    const token = localStorage.getItem(
+      'blockmind_token',
+    )
 
     if (!token) {
       return
@@ -350,7 +456,7 @@ function CoinPricesCard({
       setError('')
 
       const response = await fetch(
-        `http://localhost:5050/api/assets/${encodeURIComponent(
+        `${API_URL}/assets/${encodeURIComponent(
           assetId,
         )}`,
         {
@@ -365,60 +471,109 @@ function CoinPricesCard({
 
       if (!response.ok) {
         throw new Error(
-          data.message || 'Failed to remove asset',
+          data.message ||
+            'Failed to remove asset',
         )
       }
 
-      updateLocalUserAssets(data.assets || [])
+      updateLocalUserAssets(
+        data.assets || [],
+      )
 
       setPrices((current) =>
-        current.filter((coin) => coin.id !== assetId),
+        current.filter(
+          (coin) =>
+            coin.id !== assetId,
+        ),
       )
     } catch (error) {
-      console.error('Remove asset error:', error)
+      console.error(
+        'Remove asset error:',
+        error,
+      )
 
       if (error instanceof Error) {
         setError(error.message)
       } else {
-        setError('Failed to remove asset')
+        setError(
+          'Failed to remove asset',
+        )
       }
     } finally {
       setUpdatingAssetId(null)
     }
   }
 
-  const formatPrice = (price: number) => {
+  const handleFeedback = async (
+    vote: FeedbackVote,
+  ) => {
+    try {
+      setIsSavingFeedback(true)
+
+      await saveFeedback({
+        contentType: 'coin-prices',
+        contentId:
+          PRICES_FEEDBACK_ID,
+        vote,
+      })
+
+      setFeedbackVote(vote)
+    } catch (error) {
+      console.error(
+        'Failed to save coin prices feedback:',
+        error,
+      )
+    } finally {
+      setIsSavingFeedback(false)
+    }
+  }
+
+  const formatPrice = (
+    price: number,
+  ) => {
     if (price >= 1000) {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-      }).format(price)
+      return new Intl.NumberFormat(
+        'en-US',
+        {
+          style: 'currency',
+          currency: 'USD',
+          maximumFractionDigits: 0,
+        },
+      ).format(price)
     }
 
     if (price >= 1) {
-      return new Intl.NumberFormat('en-US', {
+      return new Intl.NumberFormat(
+        'en-US',
+        {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        },
+      ).format(price)
+    }
+
+    return new Intl.NumberFormat(
+      'en-US',
+      {
         style: 'currency',
         currency: 'USD',
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(price)
-    }
-
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
-    }).format(price)
+        maximumFractionDigits: 4,
+      },
+    ).format(price)
   }
 
-  const formatCoinName = (id: string) => {
+  const formatCoinName = (
+    id: string,
+  ) => {
     return id
       .split('-')
       .map(
         (word) =>
-          word.charAt(0).toUpperCase() + word.slice(1),
+          word.charAt(0).toUpperCase() +
+          word.slice(1),
       )
       .join(' ')
   }
@@ -454,7 +609,9 @@ function CoinPricesCard({
             <button
               type="button"
               onClick={() =>
-                setIsAddOpen((current) => !current)
+                setIsAddOpen(
+                  (current) => !current,
+                )
               }
               className="flex h-9 items-center justify-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/[0.08] px-3 text-sm font-medium text-violet-200 transition hover:bg-violet-500/[0.15]"
             >
@@ -487,7 +644,8 @@ function CoinPricesCard({
                 </div>
 
                 <div className="max-h-[330px] overflow-y-auto p-2">
-                  {searchQuery.trim().length < 2 && (
+                  {searchQuery.trim()
+                    .length < 2 && (
                     <div className="px-4 py-8 text-center">
                       <Search
                         size={20}
@@ -525,8 +683,10 @@ function CoinPricesCard({
 
                   {!isSearching &&
                     !searchError &&
-                    searchQuery.trim().length >= 2 &&
-                    searchResults.length === 0 && (
+                    searchQuery.trim()
+                      .length >= 2 &&
+                    searchResults.length ===
+                      0 && (
                       <div className="px-4 py-8 text-center">
                         <p className="text-sm text-slate-400">
                           No coins found
@@ -536,73 +696,93 @@ function CoinPricesCard({
 
                   {!isSearching &&
                     !searchError &&
-                    searchResults.map((coin) => {
-                      const alreadyFollowing =
-                        followedAssetIds.has(coin.id)
+                    searchResults.map(
+                      (coin) => {
+                        const alreadyFollowing =
+                          followedAssetIds.has(
+                            coin.id,
+                          )
 
-                      return (
-                        <div
-                          key={coin.id}
-                          className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
-                        >
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/[0.08] bg-white/[0.04]">
-                            {coin.image ? (
-                              <img
-                                src={coin.image}
-                                alt={coin.name}
-                                className="h-7 w-7 object-contain"
-                              />
-                            ) : (
-                              <span className="text-xs font-semibold text-violet-300">
-                                {coin.symbol.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-white">
-                              {coin.name}
-                            </p>
-
-                            <p className="mt-0.5 text-xs text-slate-500">
-                              {coin.symbol}
-                              {coin.rank
-                                ? ` · #${coin.rank}`
-                                : ''}
-                            </p>
-                          </div>
-
-                          {alreadyFollowing ? (
-                            <span className="rounded-lg bg-emerald-400/[0.08] px-2.5 py-1.5 text-xs font-medium text-emerald-300">
-                              Following
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleAddAsset(coin)
-                              }
-                              disabled={
-                                updatingAssetId ===
-                                coin.id
-                              }
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/[0.08] text-violet-300 transition hover:bg-violet-500/[0.16] disabled:opacity-50"
-                              aria-label={`Add ${coin.name}`}
-                            >
-                              {updatingAssetId ===
-                              coin.id ? (
-                                <LoaderCircle
-                                  size={14}
-                                  className="animate-spin"
+                        return (
+                          <div
+                            key={coin.id}
+                            className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
+                          >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/[0.08] bg-white/[0.04]">
+                              {coin.image ? (
+                                <img
+                                  src={
+                                    coin.image
+                                  }
+                                  alt={
+                                    coin.name
+                                  }
+                                  className="h-7 w-7 object-contain"
                                 />
                               ) : (
-                                <Plus size={14} />
+                                <span className="text-xs font-semibold text-violet-300">
+                                  {coin.symbol.charAt(
+                                    0,
+                                  )}
+                                </span>
                               )}
-                            </button>
-                          )}
-                        </div>
-                      )
-                    })}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-white">
+                                {coin.name}
+                              </p>
+
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                {
+                                  coin.symbol
+                                }
+                                {coin.rank
+                                  ? ` · #${coin.rank}`
+                                  : ''}
+                              </p>
+                            </div>
+
+                            {alreadyFollowing ? (
+                              <span className="rounded-lg bg-emerald-400/[0.08] px-2.5 py-1.5 text-xs font-medium text-emerald-300">
+                                Following
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleAddAsset(
+                                    coin,
+                                  )
+                                }
+                                disabled={
+                                  updatingAssetId ===
+                                  coin.id
+                                }
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/[0.08] text-violet-300 transition hover:bg-violet-500/[0.16] disabled:opacity-50"
+                                aria-label={`Add ${coin.name}`}
+                              >
+                                {updatingAssetId ===
+                                coin.id ? (
+                                  <LoaderCircle
+                                    size={
+                                      14
+                                    }
+                                    className="animate-spin"
+                                  />
+                                ) : (
+                                  <Plus
+                                    size={
+                                      14
+                                    }
+                                  />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )
+                      },
+                    )}
                 </div>
               </div>
             )}
@@ -618,7 +798,9 @@ function CoinPricesCard({
             <RefreshCw
               size={15}
               className={
-                isLoading ? 'animate-spin' : ''
+                isLoading
+                  ? 'animate-spin'
+                  : ''
               }
             />
           </button>
@@ -626,30 +808,31 @@ function CoinPricesCard({
       </div>
 
       <div className="p-3">
-        {isLoading && prices.length === 0 && (
-          <div className="space-y-2">
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="flex animate-pulse items-center justify-between rounded-2xl px-4 py-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-xl bg-white/[0.06]" />
+        {isLoading &&
+          prices.length === 0 && (
+            <div className="space-y-2">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className="flex animate-pulse items-center justify-between rounded-2xl px-4 py-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-11 w-11 rounded-xl bg-white/[0.06]" />
 
-                  <div>
-                    <div className="h-4 w-24 rounded bg-white/[0.06]" />
-                    <div className="mt-2 h-3 w-12 rounded bg-white/[0.04]" />
+                    <div>
+                      <div className="h-4 w-24 rounded bg-white/[0.06]" />
+                      <div className="mt-2 h-3 w-12 rounded bg-white/[0.04]" />
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="ml-auto h-4 w-20 rounded bg-white/[0.06]" />
+                    <div className="mt-2 ml-auto h-3 w-14 rounded bg-white/[0.04]" />
                   </div>
                 </div>
-
-                <div className="text-right">
-                  <div className="ml-auto h-4 w-20 rounded bg-white/[0.06]" />
-                  <div className="mt-2 ml-auto h-3 w-14 rounded bg-white/[0.04]" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
         {error && !isLoading && (
           <div className="m-3 rounded-2xl border border-rose-400/20 bg-rose-400/[0.07] px-4 py-4">
@@ -699,25 +882,28 @@ function CoinPricesCard({
                 : {
                     name:
                       dynamic?.name ||
-                      formatCoinName(coin.id),
+                      formatCoinName(
+                        coin.id,
+                      ),
                     symbol:
                       dynamic?.symbol ||
                       coin.id.toUpperCase(),
-                    shortName:
-                      (
-                        dynamic?.symbol ||
-                        coin.id
-                      )
-                        .charAt(0)
-                        .toUpperCase(),
-                    image: dynamic?.image,
+                    shortName: (
+                      dynamic?.symbol ||
+                      coin.id
+                    )
+                      .charAt(0)
+                      .toUpperCase(),
+                    image:
+                      dynamic?.image,
                   }
 
               const isPositive =
                 coin.change24h >= 0
 
               const isRemoving =
-                updatingAssetId === coin.id
+                updatingAssetId ===
+                coin.id
 
               return (
                 <div
@@ -727,16 +913,23 @@ function CoinPricesCard({
                   <button
                     type="button"
                     onClick={() =>
-                      navigate(`/coin/${coin.id}`)
+                      navigate(
+                        `/coin/${coin.id}`,
+                      )
                     }
                     className="flex min-w-0 items-center gap-3 text-left"
                   >
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] text-base font-semibold text-white">
-                      {'image' in details &&
+                      {'image' in
+                        details &&
                       details.image ? (
                         <img
-                          src={details.image}
-                          alt={details.name}
+                          src={
+                            details.image
+                          }
+                          alt={
+                            details.name
+                          }
                           className="h-8 w-8 object-contain"
                         />
                       ) : (
@@ -759,12 +952,16 @@ function CoinPricesCard({
                     <button
                       type="button"
                       onClick={() =>
-                        navigate(`/coin/${coin.id}`)
+                        navigate(
+                          `/coin/${coin.id}`,
+                        )
                       }
                       className="text-right"
                     >
                       <p className="text-sm font-semibold text-white">
-                        {formatPrice(coin.price)}
+                        {formatPrice(
+                          coin.price,
+                        )}
                       </p>
 
                       <div
@@ -775,9 +972,13 @@ function CoinPricesCard({
                         }`}
                       >
                         {isPositive ? (
-                          <ArrowUpRight size={13} />
+                          <ArrowUpRight
+                            size={13}
+                          />
                         ) : (
-                          <ArrowDownRight size={13} />
+                          <ArrowDownRight
+                            size={13}
+                          />
                         )}
 
                         {Math.abs(
@@ -790,7 +991,9 @@ function CoinPricesCard({
                     <button
                       type="button"
                       onClick={() =>
-                        handleRemoveAsset(coin.id)
+                        handleRemoveAsset(
+                          coin.id,
+                        )
                       }
                       disabled={isRemoving}
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 opacity-0 transition hover:bg-rose-400/[0.08] hover:text-rose-400 group-hover:opacity-100 disabled:opacity-50"
@@ -814,10 +1017,50 @@ function CoinPricesCard({
         )}
       </div>
 
-      <div className="border-t border-white/[0.06] px-6 py-4">
+      <div className="flex items-center justify-between gap-4 border-t border-white/[0.06] px-6 py-4">
         <p className="text-xs text-slate-600">
           Live market data powered by CoinGecko
         </p>
+
+        <div className="flex items-center gap-2">
+          <span className="mr-1 hidden text-xs text-slate-600 sm:inline">
+            Useful?
+          </span>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleFeedback('like')
+            }
+            disabled={isSavingFeedback}
+            aria-label="Like market prices"
+            title="Show me more like this"
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              feedbackVote === 'like'
+                ? 'border-emerald-400/30 bg-emerald-400/[0.12] text-emerald-300'
+                : 'border-white/[0.08] bg-white/[0.025] text-slate-500 hover:border-emerald-400/20 hover:bg-emerald-400/[0.07] hover:text-emerald-300'
+            }`}
+          >
+            <ThumbsUp size={14} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              handleFeedback('dislike')
+            }
+            disabled={isSavingFeedback}
+            aria-label="Dislike market prices"
+            title="Show me less like this"
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              feedbackVote === 'dislike'
+                ? 'border-rose-400/30 bg-rose-400/[0.12] text-rose-300'
+                : 'border-white/[0.08] bg-white/[0.025] text-slate-500 hover:border-rose-400/20 hover:bg-rose-400/[0.07] hover:text-rose-300'
+            }`}
+          >
+            <ThumbsDown size={14} />
+          </button>
+        </div>
       </div>
     </section>
   )
