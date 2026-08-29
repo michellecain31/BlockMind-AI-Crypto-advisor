@@ -30,6 +30,25 @@ const pendingRequests = new Map<
   Promise<MarketPrice[]>
 >()
 
+const getCoinGeckoHeaders = (): Record<
+  string,
+  string
+> => {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  }
+
+  const apiKey =
+    process.env.COINGECKO_API_KEY
+
+  if (apiKey) {
+    headers['x-cg-demo-api-key'] =
+      apiKey
+  }
+
+  return headers
+}
+
 const normalizeCoinIds = (
   coinIds: string[],
 ) => {
@@ -59,8 +78,14 @@ const findStalePrices = (
   const pricesById =
     new Map<string, MarketPrice>()
 
-  for (const cacheItem of marketCache.values()) {
-    for (const price of cacheItem.data) {
+  for (
+    const cacheItem
+    of marketCache.values()
+  ) {
+    for (
+      const price
+      of cacheItem.data
+    ) {
       if (
         requestedIds.has(price.id) &&
         !pricesById.has(price.id)
@@ -123,9 +148,10 @@ export const getCryptoPrices = async (
     return existingRequest
   }
 
-  const request = fetchCryptoPrices(
-    normalizedIds,
-  )
+  const request =
+    fetchCryptoPrices(
+      normalizedIds,
+    )
 
   pendingRequests.set(
     cacheKey,
@@ -161,14 +187,17 @@ export const getCryptoPrices = async (
 
     throw error
   } finally {
-    pendingRequests.delete(cacheKey)
+    pendingRequests.delete(
+      cacheKey,
+    )
   }
 }
 
 const fetchCryptoPrices = async (
   coinIds: string[],
 ): Promise<MarketPrice[]> => {
-  const ids = coinIds.join(',')
+  const ids =
+    coinIds.join(',')
 
   const url =
     'https://api.coingecko.com/api/v3/simple/price' +
@@ -177,9 +206,7 @@ const fetchCryptoPrices = async (
     '&include_24hr_change=true'
 
   const response = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: getCoinGeckoHeaders(),
   })
 
   if (!response.ok) {
@@ -195,6 +222,12 @@ const fetchCryptoPrices = async (
         body: responseText,
       },
     )
+
+    if (response.status === 401) {
+      throw new Error(
+        'CoinGecko API authentication failed',
+      )
+    }
 
     if (response.status === 429) {
       throw new Error(
@@ -219,7 +252,9 @@ const fetchCryptoPrices = async (
     )
     .map((coinId) => ({
       id: coinId,
-      price: data[coinId].usd,
+      price:
+        data[coinId].usd,
+
       change24h:
         typeof data[coinId]
           .usd_24h_change ===

@@ -59,6 +59,25 @@ const pendingRequests = new Map<
   Promise<CoinDetails>
 >()
 
+const getCoinGeckoHeaders = (): Record<
+  string,
+  string
+> => {
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  }
+
+  const apiKey =
+    process.env.COINGECKO_API_KEY
+
+  if (apiKey) {
+    headers['x-cg-demo-api-key'] =
+      apiKey
+  }
+
+  return headers
+}
+
 export const getCoinDetails = async (
   coinId: string,
 ): Promise<CoinDetails> => {
@@ -139,14 +158,9 @@ const fetchCoinDetails = async (
     '&community_data=false' +
     '&developer_data=false'
 
-  const response = await fetch(
-    url,
-    {
-      headers: {
-        Accept: 'application/json',
-      },
-    },
-  )
+  const response = await fetch(url, {
+    headers: getCoinGeckoHeaders(),
+  })
 
   if (!response.ok) {
     const body =
@@ -161,6 +175,12 @@ const fetchCoinDetails = async (
         body,
       },
     )
+
+    if (response.status === 401) {
+      throw new Error(
+        'CoinGecko API authentication failed',
+      )
+    }
 
     if (response.status === 404) {
       throw new Error(
