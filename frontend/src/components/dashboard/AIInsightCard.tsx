@@ -1,48 +1,158 @@
 import { useEffect, useState } from 'react'
 import {
-  ArrowUpRight,
   BrainCircuit,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
 } from 'lucide-react'
 
+import { API_URL } from '../../services/api'
 import {
   getFeedback,
   saveFeedback,
   type FeedbackVote,
 } from '../../services/feedbackService'
 
-const INSIGHT_ID = 'daily-insight-placeholder-v1'
+type AIInsight = {
+  id: string
+  title: string
+  body: string
+  assets: string[]
+  source: 'ai' | 'fallback'
+  createdAt: string
+}
+
+const getRelativeTime = (
+  createdAt: string,
+) => {
+  const createdTime =
+    new Date(createdAt).getTime()
+
+  const now = Date.now()
+
+  const diffMinutes = Math.max(
+    0,
+    Math.floor(
+      (now - createdTime) /
+        (1000 * 60),
+    ),
+  )
+
+  if (diffMinutes < 1) {
+    return 'Updated just now'
+  }
+
+  if (diffMinutes < 60) {
+    return `Updated ${diffMinutes} min ago`
+  }
+
+  const diffHours = Math.floor(
+    diffMinutes / 60,
+  )
+
+  if (diffHours < 24) {
+    return `Updated ${diffHours} ${
+      diffHours === 1 ? 'hour' : 'hours'
+    } ago`
+  }
+
+  return 'Updated today'
+}
 
 function AIInsightCard() {
-  const [vote, setVote] = useState<FeedbackVote | null>(null)
-  const [isSavingVote, setIsSavingVote] = useState(false)
+  const [insight, setInsight] =
+    useState<AIInsight | null>(null)
+
+  const [vote, setVote] =
+    useState<FeedbackVote | null>(
+      null,
+    )
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [
+    isSavingVote,
+    setIsSavingVote,
+  ] = useState(false)
+
+  const [error, setError] =
+    useState('')
 
   useEffect(() => {
-    const loadFeedback = async () => {
+    const loadInsight = async () => {
+      setIsLoading(true)
+      setError('')
+
       try {
-        const result = await getFeedback(
-          'ai-insight',
-          INSIGHT_ID,
+        const token =
+          localStorage.getItem(
+            'blockmind_token',
+          )
+
+        const response = await fetch(
+          `${API_URL}/ai-insights/daily`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
         )
 
-        setVote(result.vote)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              'Failed to load AI insight',
+          )
+        }
+
+        const loadedInsight =
+          data.insight as AIInsight
+
+        setInsight(loadedInsight)
+
+        try {
+          const feedback =
+            await getFeedback(
+              'ai-insight',
+              loadedInsight.id,
+            )
+
+          setVote(feedback.vote)
+        } catch (feedbackError) {
+          console.error(
+            'Failed to load AI insight feedback:',
+            feedbackError,
+          )
+        }
       } catch (error) {
         console.error(
-          'Failed to load AI insight feedback:',
+          'Failed to load AI insight:',
           error,
         )
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Failed to load AI insight',
+        )
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    loadFeedback()
+    loadInsight()
   }, [])
 
   const handleVote = async (
     selectedVote: FeedbackVote,
   ) => {
-    if (isSavingVote) {
+    if (
+      !insight ||
+      isSavingVote
+    ) {
       return
     }
 
@@ -51,7 +161,7 @@ function AIInsightCard() {
     try {
       await saveFeedback({
         contentType: 'ai-insight',
-        contentId: INSIGHT_ID,
+        contentId: insight.id,
         vote: selectedVote,
       })
 
@@ -64,6 +174,53 @@ function AIInsightCard() {
     } finally {
       setIsSavingVote(false)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <section className="relative overflow-hidden rounded-[28px] border border-violet-400/20 bg-gradient-to-br from-violet-500/[0.12] via-white/[0.035] to-blue-500/[0.08] p-7 shadow-[0_25px_80px_rgba(76,29,149,0.12)] sm:p-8">
+        <div className="animate-pulse">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-white/[0.07]" />
+
+            <div className="space-y-2">
+              <div className="h-4 w-44 rounded bg-white/[0.07]" />
+              <div className="h-3 w-64 rounded bg-white/[0.05]" />
+            </div>
+          </div>
+
+          <div className="h-4 w-28 rounded bg-white/[0.05]" />
+
+          <div className="mt-4 h-8 max-w-2xl rounded bg-white/[0.07]" />
+
+          <div className="mt-5 h-20 max-w-3xl rounded bg-white/[0.05]" />
+        </div>
+      </section>
+    )
+  }
+
+  if (error || !insight) {
+    return (
+      <section className="rounded-[28px] border border-rose-400/20 bg-rose-400/[0.06] p-7 sm:p-8">
+        <div className="flex items-center gap-3">
+          <BrainCircuit
+            size={21}
+            className="text-rose-300"
+          />
+
+          <div>
+            <p className="font-medium text-white">
+              AI Insight unavailable
+            </p>
+
+            <p className="mt-1 text-sm text-slate-400">
+              {error ||
+                'Unable to load today’s insight.'}
+            </p>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -80,7 +237,7 @@ function AIInsightCard() {
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="font-semibold text-white">
                   AI Insight of the Day
                 </p>
@@ -98,7 +255,9 @@ function AIInsightCard() {
           </div>
 
           <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-400">
-            Updated 8 min ago
+            {getRelativeTime(
+              insight.createdAt,
+            )}
           </span>
         </div>
 
@@ -108,39 +267,26 @@ function AIInsightCard() {
           </p>
 
           <h2 className="text-2xl font-semibold leading-snug tracking-tight text-white sm:text-3xl">
-            Bitcoin&apos;s steady momentum is shifting attention toward
-            large-cap altcoins.
+            {insight.title}
           </h2>
 
           <p className="mt-5 max-w-3xl text-base leading-7 text-slate-400">
-            With Bitcoin holding its recent range, Ethereum and Solana are
-            showing stronger relative activity. For a long-term investor, the
-            key signal today may be market breadth rather than short-term price
-            volatility.
+            {insight.body}
           </p>
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-5 border-t border-white/[0.08] pt-6">
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300">
-              BTC
-            </span>
-
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300">
-              ETH
-            </span>
-
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300">
-              SOL
-            </span>
-
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-violet-300 transition hover:bg-violet-400/10"
-            >
-              Explore insight
-              <ArrowUpRight size={13} />
-            </button>
+            {insight.assets.map(
+              (asset) => (
+                <span
+                  key={asset}
+                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300"
+                >
+                  {asset}
+                </span>
+              ),
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -150,7 +296,9 @@ function AIInsightCard() {
 
             <button
               type="button"
-              onClick={() => handleVote('like')}
+              onClick={() =>
+                handleVote('like')
+              }
               disabled={isSavingVote}
               aria-label="Like insight"
               className={`flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50 ${
@@ -164,7 +312,9 @@ function AIInsightCard() {
 
             <button
               type="button"
-              onClick={() => handleVote('dislike')}
+              onClick={() =>
+                handleVote('dislike')
+              }
               disabled={isSavingVote}
               aria-label="Dislike insight"
               className={`flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50 ${

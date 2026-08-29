@@ -10,6 +10,7 @@ import feedbackRoutes from './routes/feedbackRoutes.js'
 import searchRoutes from './routes/searchRoutes.js'
 import coinRoutes from './routes/coinRoutes.js'
 import assetRoutes from './routes/assetRoutes.js'
+import aiInsightRoutes from './routes/aiInsightRoutes.js'
 
 const app = express()
 
@@ -21,12 +22,19 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin)
+      ) {
         callback(null, true)
         return
       }
 
-      callback(new Error('Not allowed by CORS'))
+      callback(
+        new Error(
+          'Not allowed by CORS',
+        ),
+      )
     },
   }),
 )
@@ -41,13 +49,23 @@ app.get('/health', (_req, res) => {
 })
 
 app.use('/api/auth', authRoutes)
-app.use('/api/onboarding', onboardingRoutes)
+app.use(
+  '/api/onboarding',
+  onboardingRoutes,
+)
 app.use('/api/market', marketRoutes)
 app.use('/api/news', newsRoutes)
 app.use('/api/memes', memeRoutes)
-app.use('/api/feedback', feedbackRoutes)
+app.use(
+  '/api/feedback',
+  feedbackRoutes,
+)
 app.use('/api/search', searchRoutes)
 app.use('/api/coins', coinRoutes)
 app.use('/api/assets', assetRoutes)
+app.use(
+  '/api/ai-insights',
+  aiInsightRoutes,
+)
 
 export default app
