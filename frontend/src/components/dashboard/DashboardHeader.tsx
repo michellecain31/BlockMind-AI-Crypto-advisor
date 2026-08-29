@@ -9,6 +9,7 @@ import {
   Settings,
   Sparkles,
   TrendingUp,
+  X,
 } from 'lucide-react'
 
 import CryptoSearch from './CryptoSearch'
@@ -67,6 +68,7 @@ function DashboardHeader({
     : null
 
   const userName = user?.name || 'Investor'
+
   const firstLetter = userName
     .charAt(0)
     .toUpperCase()
@@ -283,6 +285,9 @@ function DashboardHeader({
               }
               className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] text-slate-400 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
               aria-label="Notifications"
+              aria-expanded={
+                isNotificationsOpen
+              }
             >
               <Bell size={18} />
 
@@ -294,112 +299,163 @@ function DashboardHeader({
             </button>
 
             {isNotificationsOpen && (
-              <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[360px] overflow-hidden rounded-2xl border border-white/10 bg-[#101522] shadow-2xl">
-                <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
-                  <div>
-                    <p className="font-medium text-white">
-                      Notifications
-                    </p>
+              <>
+                <button
+                  type="button"
+                  aria-label="Close notifications"
+                  onClick={() =>
+                    setIsNotificationsOpen(
+                      false,
+                    )
+                  }
+                  className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] sm:hidden"
+                />
 
-                    <p className="mt-1 text-xs text-slate-500">
-                      {unreadCount > 0
-                        ? `${unreadCount} unread`
-                        : 'You are all caught up'}
-                    </p>
+                <div className="fixed inset-x-4 top-24 z-50 max-h-[calc(100vh-7rem)] overflow-hidden rounded-3xl border border-white/10 bg-[#101522] shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[380px] sm:max-h-none sm:rounded-2xl">
+                  <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-4 sm:px-5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-white">
+                          Notifications
+                        </p>
+
+                        {unreadCount > 0 && (
+                          <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold text-violet-300">
+                            {unreadCount} new
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-1 text-xs text-slate-500">
+                        {unreadCount > 0
+                          ? 'You have new updates'
+                          : 'You are all caught up'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={markAllAsRead}
+                          className="hidden text-xs font-medium text-violet-300 transition hover:text-violet-200 sm:block"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsNotificationsOpen(
+                            false,
+                          )
+                        }
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition hover:bg-white/[0.06] hover:text-white sm:hidden"
+                        aria-label="Close notifications"
+                      >
+                        <X size={17} />
+                      </button>
+                    </div>
                   </div>
 
                   {unreadCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={markAllAsRead}
-                      className="text-xs font-medium text-violet-300 transition hover:text-violet-200"
-                    >
-                      Mark all as read
-                    </button>
+                    <div className="border-b border-white/[0.07] px-4 py-2 sm:hidden">
+                      <button
+                        type="button"
+                        onClick={markAllAsRead}
+                        className="text-xs font-medium text-violet-300 transition hover:text-violet-200"
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
                   )}
-                </div>
 
-                <div className="max-h-[420px] overflow-y-auto p-2">
-                  {notifications.map(
-                    (notification) => {
-                      const isRead =
-                        readNotificationIds.includes(
-                          notification.id,
-                        )
+                  <div className="max-h-[60vh] overflow-y-auto p-2 sm:max-h-[420px]">
+                    {notifications.map(
+                      (notification) => {
+                        const isRead =
+                          readNotificationIds.includes(
+                            notification.id,
+                          )
 
-                      return (
-                        <button
-                          key={
-                            notification.id
-                          }
-                          type="button"
-                          onClick={() =>
-                            markNotificationAsRead(
-                              notification.id,
-                            )
-                          }
-                          className={`flex w-full gap-3 rounded-xl px-3 py-3 text-left transition ${
-                            isRead
-                              ? 'hover:bg-white/[0.03]'
-                              : 'bg-violet-500/[0.06] hover:bg-violet-500/[0.10]'
-                          }`}
-                        >
-                          <div
-                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+                        return (
+                          <button
+                            key={
+                              notification.id
+                            }
+                            type="button"
+                            onClick={() =>
+                              markNotificationAsRead(
+                                notification.id,
+                              )
+                            }
+                            className={`flex w-full gap-3 rounded-2xl px-3 py-3.5 text-left transition ${
                               isRead
-                                ? 'border-white/[0.07] bg-white/[0.03] text-slate-500'
-                                : 'border-violet-400/20 bg-violet-500/10 text-violet-300'
+                                ? 'hover:bg-white/[0.03]'
+                                : 'bg-violet-500/[0.06] hover:bg-violet-500/[0.10]'
                             }`}
                           >
-                            {getNotificationIcon(
-                              notification.type,
-                            )}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <p
-                                className={`text-sm font-medium ${
-                                  isRead
-                                    ? 'text-slate-400'
-                                    : 'text-white'
-                                }`}
-                              >
-                                {
-                                  notification.title
-                                }
-                              </p>
-
-                              {!isRead && (
-                                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                            <div
+                              className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
+                                isRead
+                                  ? 'border-white/[0.07] bg-white/[0.03] text-slate-500'
+                                  : 'border-violet-400/20 bg-violet-500/10 text-violet-300'
+                              }`}
+                            >
+                              {getNotificationIcon(
+                                notification.type,
                               )}
                             </div>
 
-                            <p className="mt-1 text-xs leading-5 text-slate-500">
-                              {
-                                notification.description
-                              }
-                            </p>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <p
+                                  className={`text-sm font-medium leading-5 ${
+                                    isRead
+                                      ? 'text-slate-400'
+                                      : 'text-white'
+                                  }`}
+                                >
+                                  {
+                                    notification.title
+                                  }
+                                </p>
 
-                            <p className="mt-2 text-[11px] text-slate-600">
-                              {
-                                notification.time
-                              }
-                            </p>
-                          </div>
-                        </button>
-                      )
-                    },
-                  )}
+                                {!isRead && (
+                                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                                )}
+                              </div>
+
+                              <p className="mt-1 text-xs leading-5 text-slate-500">
+                                {
+                                  notification.description
+                                }
+                              </p>
+
+                              <p className="mt-2 text-[11px] text-slate-600">
+                                {
+                                  notification.time
+                                }
+                              </p>
+                            </div>
+                          </button>
+                        )
+                      },
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 border-t border-white/[0.07] px-4 py-3 text-[11px] text-slate-600 sm:px-5 sm:text-xs">
+                    <CircleCheck
+                      size={14}
+                      className="shrink-0"
+                    />
+
+                    Notifications are personalized
+                    to your settings
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-2 border-t border-white/[0.07] px-5 py-3 text-xs text-slate-600">
-                  <CircleCheck size={14} />
-
-                  Notifications are personalized
-                  to your settings
-                </div>
-              </div>
+              </>
             )}
           </div>
 

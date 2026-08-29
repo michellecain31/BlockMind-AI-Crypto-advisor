@@ -31,7 +31,11 @@ function LoginPage() {
         password,
       })
 
-      localStorage.setItem('blockmind_token', response.token)
+      localStorage.setItem(
+        'blockmind_token',
+        response.token,
+      )
+
       localStorage.setItem(
         'blockmind_user',
         JSON.stringify(response.user),
@@ -78,6 +82,7 @@ function LoginPage() {
 
               <h1 className="text-5xl font-semibold leading-tight tracking-tight xl:text-6xl">
                 Your crypto world,
+
                 <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-blue-300 bg-clip-text text-transparent">
                   curated for you.
                 </span>
@@ -171,7 +176,9 @@ function LoginPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
                   placeholder="you@example.com"
                   required
                   className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 focus:bg-white/[0.06] focus:ring-4 focus:ring-violet-500/10"
@@ -179,21 +186,12 @@ function LoginPage() {
               </div>
 
               <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label
-                    htmlFor="password"
-                    className="text-sm font-medium text-slate-300"
-                  >
-                    Password
-                  </label>
-
-                  <button
-                    type="button"
-                    className="text-sm text-slate-500 transition hover:text-violet-300"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+                <label
+                  htmlFor="password"
+                  className="mb-2 block text-sm font-medium text-slate-300"
+                >
+                  Password
+                </label>
 
                 <input
                   id="password"
@@ -219,7 +217,9 @@ function LoginPage() {
                 disabled={isLoading}
                 className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-3.5 font-medium text-white shadow-[0_18px_50px_rgba(91,33,182,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_60px_rgba(91,33,182,0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading
+                  ? 'Signing in...'
+                  : 'Sign in'}
 
                 {!isLoading && (
                   <ArrowRight
