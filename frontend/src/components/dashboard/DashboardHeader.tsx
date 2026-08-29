@@ -247,6 +247,22 @@ function DashboardHeader({
     return <Sparkles size={16} />
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+
+    if (hour >= 5 && hour < 12) {
+      return 'Good morning'
+    }
+
+    if (hour >= 12 && hour < 18) {
+      return 'Good afternoon'
+    }
+
+    return 'Good evening'
+  }
+
+  const greeting = getGreeting()
+
   return (
     <header className="mb-8">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
@@ -256,7 +272,7 @@ function DashboardHeader({
           </p>
 
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Good morning, {userName}.
+            {greeting}, {userName}.
           </h1>
 
           <p className="mt-2 text-sm text-slate-500 sm:text-base">
