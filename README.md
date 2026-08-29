@@ -271,22 +271,22 @@ In the future, this data could support recommendation algorithms, ranking models
 
 ## If I Had More Time
 
-Given more development time, I would continue improving BlockMind beyond the scope of the current assignment.
+Given more development time, I would focus on making BlockMind smarter, more reliable, and more personalized over time.
 
-Some features I would explore next include:
+One of my main next steps would be to use the feedback already collected from users to influence future content ranking. Instead of relying mainly on onboarding preferences, the dashboard could gradually learn from what each user actually likes or dislikes.
 
-- Automatically personalizing and re-ranking content based on stored feedback
-- Making memes more personalized based on selected assets and investor style
-- Customizable cryptocurrency price alerts
-- A simple portfolio and watchlist performance view
-- Historical price charts on individual coin pages
-- More detailed market statistics and analytics
-- Improved notification logic based on real market events
-- Automated frontend and backend testing
-- Additional monitoring and error handling for external APIs
-- More advanced AI personalization based on previous user interactions
+I would also like to take the AI integration further. In the current version, AI is mainly used to generate personalized insights based on the user's profile and market context. In a more advanced version, I would want BlockMind to learn more about the investor over time — their interests, behavior, risk preferences, the assets they follow, and the type of information they respond to. This could allow the AI to provide more meaningful personalized insights and guidance instead of simply presenting information gathered from external sources.
 
-For this version, I focused on completing the core assignment requirements, building a clean end-to-end experience and making sure the deployed application is stable and usable.
+I would also:
+
+- Add automated frontend and backend tests to make future changes safer and improve overall reliability
+- Add customizable price alerts and notifications based on real market events
+- Expand coin pages with historical price charts and additional market data
+- Add a simple portfolio and watchlist performance view
+- Personalize meme selection based on followed assets and investor style
+- Use previous interactions and feedback to continuously improve AI personalization
+
+For this version, I focused on delivering the core assignment requirements as a complete end-to-end product, with a clean user experience and a stable deployed application.
 
 ---
 
