@@ -194,6 +194,24 @@ Negative feedback would be treated as a signal rather than an absolute rule, sin
 This approach could later support ranking models, recommendation algorithms or improved AI prompt personalization.
 
 ---
+## If I Had More Time
+
+Given more development time, I would continue improving BlockMind beyond the scope of the current assignment.
+
+Some of the next features I would explore include:
+
+- Using the stored feedback to automatically personalize and re-rank future content for each user.
+- Making the meme section more personalized based on the user's selected assets and investor style.
+- Adding customizable price alerts for selected cryptocurrencies.
+- Adding a simple portfolio/watchlist performance view.
+- Expanding the coin details pages with historical price charts and additional market data.
+- Adding automated frontend and backend tests.
+- Improving monitoring and error handling for external APIs.
+
+For this version, I focused on completing the main assignment requirements, building a clean end-to-end experience, and making sure the deployed application is stable and usable.
+
+---
+
 
 ##  Tech Stack
 
