@@ -17,7 +17,8 @@ type CacheItem = {
   expiresAt: number
 }
 
-const CACHE_DURATION = 60 * 1000
+const CACHE_DURATION =
+  10 * 60 * 1000
 
 const marketCache = new Map<
   string,
@@ -29,6 +30,61 @@ const pendingRequests = new Map<
   Promise<MarketPrice[]>
 >()
 
+const normalizeCoinIds = (
+  coinIds: string[],
+) => {
+  return [
+    ...new Set(
+      coinIds.map((id) =>
+        id.trim().toLowerCase(),
+      ),
+    ),
+  ]
+}
+
+const getCacheKey = (
+  coinIds: string[],
+) => {
+  return [...coinIds]
+    .sort()
+    .join(',')
+}
+
+const findStalePrices = (
+  coinIds: string[],
+): MarketPrice[] => {
+  const requestedIds =
+    new Set(coinIds)
+
+  const pricesById =
+    new Map<string, MarketPrice>()
+
+  for (const cacheItem of marketCache.values()) {
+    for (const price of cacheItem.data) {
+      if (
+        requestedIds.has(price.id) &&
+        !pricesById.has(price.id)
+      ) {
+        pricesById.set(
+          price.id,
+          price,
+        )
+      }
+    }
+  }
+
+  return coinIds
+    .map((coinId) =>
+      pricesById.get(coinId),
+    )
+    .filter(
+      (
+        price,
+      ): price is MarketPrice =>
+        Boolean(price),
+    )
+}
+
 export const getCryptoPrices = async (
   coinIds: string[],
 ): Promise<MarketPrice[]> => {
@@ -36,17 +92,11 @@ export const getCryptoPrices = async (
     return []
   }
 
-  const normalizedIds = [
-    ...new Set(
-      coinIds.map((id) =>
-        id.trim().toLowerCase(),
-      ),
-    ),
-  ]
+  const normalizedIds =
+    normalizeCoinIds(coinIds)
 
-  const cacheKey = [...normalizedIds]
-    .sort()
-    .join(',')
+  const cacheKey =
+    getCacheKey(normalizedIds)
 
   const cached =
     marketCache.get(cacheKey)
@@ -88,10 +138,28 @@ export const getCryptoPrices = async (
     marketCache.set(cacheKey, {
       data: prices,
       expiresAt:
-        Date.now() + CACHE_DURATION,
+        Date.now() +
+        CACHE_DURATION,
     })
 
     return prices
+  } catch (error) {
+    const stalePrices =
+      cached?.data.length
+        ? cached.data
+        : findStalePrices(
+            normalizedIds,
+          )
+
+    if (stalePrices.length > 0) {
+      console.warn(
+        `CoinGecko unavailable. Using cached market prices for: ${cacheKey}`,
+      )
+
+      return stalePrices
+    }
+
+    throw error
   } finally {
     pendingRequests.delete(cacheKey)
   }
@@ -103,10 +171,10 @@ const fetchCryptoPrices = async (
   const ids = coinIds.join(',')
 
   const url =
-    `https://api.coingecko.com/api/v3/simple/price` +
+    'https://api.coingecko.com/api/v3/simple/price' +
     `?ids=${encodeURIComponent(ids)}` +
-    `&vs_currencies=usd` +
-    `&include_24hr_change=true`
+    '&vs_currencies=usd' +
+    '&include_24hr_change=true'
 
   const response = await fetch(url, {
     headers: {
@@ -143,11 +211,21 @@ const fetchCryptoPrices = async (
     (await response.json()) as CoinGeckoPriceResponse
 
   return coinIds
-    .filter((coinId) => data[coinId])
+    .filter(
+      (coinId) =>
+        data[coinId] &&
+        typeof data[coinId].usd ===
+          'number',
+    )
     .map((coinId) => ({
       id: coinId,
       price: data[coinId].usd,
       change24h:
-        data[coinId].usd_24h_change,
+        typeof data[coinId]
+          .usd_24h_change ===
+        'number'
+          ? data[coinId]
+              .usd_24h_change
+          : 0,
     }))
 }
