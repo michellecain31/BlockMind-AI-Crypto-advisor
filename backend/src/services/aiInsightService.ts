@@ -119,6 +119,34 @@ const extractJson = (
   }
 }
 
+const isMeaningfulText = (
+  value: string,
+  minLength: number,
+) => {
+  const normalized = value
+    .trim()
+    .replace(/\s+/g, ' ')
+
+  if (normalized.length < minLength) {
+    return false
+  }
+
+  if (/^[.\-_…\s]+$/.test(normalized)) {
+    return false
+  }
+
+  const lettersAndNumbers =
+    normalized.match(
+      /[\p{L}\p{N}]/gu,
+    )
+
+  return (
+    lettersAndNumbers !== null &&
+    lettersAndNumbers.length >=
+      Math.max(5, Math.floor(minLength / 3))
+  )
+}
+
 export const generateAIInsight = async (
   params: GenerateInsightParams,
 ): Promise<GeneratedInsight> => {
@@ -160,10 +188,12 @@ Rules:
 - Do not suggest when the user should act, trade, enter, exit, collect, or time the market.
 - Keep the insight descriptive and educational, not prescriptive.
 - Do not promise returns.
-- Do not invent current prices, statistics, or breaking news.
+- Do not invent current prices, statistics, breaking news, correlations, or current market conditions.
+- If discussing relationships between crypto and NFT markets, describe them as general educational concepts rather than verified current conditions.
+- Do not return placeholders such as "...", "N/A", or empty text.
+- Title must be a complete meaningful sentence or phrase under 18 words.
+- Body must contain a complete useful explanation between 45 and 80 words.
 - Focus on market behavior, risk, sentiment, diversification, network activity, volatility, or another useful crypto concept.
-- Title must be under 18 words.
-- Body should be 45 to 80 words.
 - Assets must use ticker symbols such as BTC, ETH, SOL.
 `
 
@@ -190,7 +220,7 @@ Rules:
             {
               role: 'system',
               content:
-                'You generate concise educational crypto dashboard insights. Return only the requested structured JSON response.',
+                'You generate concise educational crypto dashboard insights. Do not provide financial advice, recommend investment actions, fabricate live market conditions, or return placeholder text. Return only the requested structured JSON response.',
             },
             {
               role: 'user',
@@ -285,23 +315,49 @@ Rules:
       return getFallbackInsight(params)
     }
 
+    const cleanTitle =
+      parsed.title.trim()
+
+    const cleanBody =
+      parsed.body.trim()
+
+    if (
+      !isMeaningfulText(cleanTitle, 8) ||
+      !isMeaningfulText(cleanBody, 80)
+    ) {
+      console.error(
+        'OpenRouter returned invalid or placeholder insight:',
+        {
+          title: cleanTitle,
+          body: cleanBody,
+        },
+      )
+
+      return getFallbackInsight(params)
+    }
+
     const generatedAssets =
       Array.isArray(parsed.assets)
         ? parsed.assets.filter(
             (
               asset,
             ): asset is string =>
-              typeof asset === 'string',
+              typeof asset === 'string' &&
+              asset.trim().length > 0,
           )
         : symbols
 
     return {
-      title: parsed.title.trim(),
-      body: parsed.body.trim(),
+      title: cleanTitle,
+      body: cleanBody,
 
       assets:
         generatedAssets.length > 0
-          ? generatedAssets.slice(0, 4)
+          ? generatedAssets
+              .map((asset) =>
+                asset.trim().toUpperCase(),
+              )
+              .slice(0, 4)
           : symbols,
 
       source: 'ai',
