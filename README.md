@@ -15,49 +15,85 @@
 [![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com/)
 [![Render](https://img.shields.io/badge/Backend-Render-46E3B7)](https://render.com/)
 
-###  [Live Demo](https://block-mind-ai-crypto-advisor.vercel.app)
+### 🚀 [Live Demo](https://block-mind-ai-crypto-advisor.vercel.app)
 
 </div>
 
 ---
 
-##  About BlockMind
+## About BlockMind
 
-**BlockMind** is a personalized AI-powered crypto investor dashboard.
+**BlockMind** is a personalized crypto investor dashboard that combines live market data, crypto news, AI-generated insights and user preferences in one place.
 
-Instead of showing every user the same information, BlockMind creates a dashboard experience based on the user's selected crypto assets, investor style, and preferred types of content.
+Instead of showing every user the same information, BlockMind creates a dashboard experience based on the user's selected crypto assets, investor style and preferred types of content.
 
-After completing a short onboarding process, users receive a personalized dashboard containing:
+After a short onboarding process, users receive a personalized dashboard containing:
 
--  Relevant crypto market news
--  Live cryptocurrency prices and 24-hour market movement
--  A personalized AI-generated daily insight
--  A dynamic crypto meme
-- 👍👎 Feedback controls that can be used to improve future recommendations
+- Live cryptocurrency prices and 24-hour market movement
+- Relevant crypto market news
+- A personalized AI-generated daily insight
+- A dynamic crypto meme
+- 👍👎 Feedback controls for future recommendation improvements
+- Crypto search and individual coin details
+- Editable personalization settings
 
-The goal is to create a clean, useful and personalized crypto experience while demonstrating how user preferences and feedback can support future recommendation-model improvements.
-
----
-
-##  Live Application
-
-| Service | URL |
-|---|---|
-| **Frontend** | [block-mind-ai-crypto-advisor.vercel.app](https://block-mind-ai-crypto-advisor.vercel.app) |
-| **Backend API** | [blockmind-api.onrender.com](https://blockmind-api.onrender.com) |
-| **API Health Check** | [blockmind-api.onrender.com/health](https://blockmind-api.onrender.com/health) |
-
-> The backend is hosted on Render's free tier, so the first request after a period of inactivity may take a few seconds while the service wakes up.
+The goal of the project was to build a complete end-to-end experience while exploring how onboarding preferences and user feedback can be used to personalize financial content.
 
 ---
 
-##  Main Features
+## Application Preview
+
+### Personalized Dashboard
+
+![BlockMind Dashboard](docs/screenshots/dashboard1.png)
+
+The main dashboard combines the user's preferences, market information and AI-generated content into one personalized experience.
+
+### Market Watch & News
+
+![Market Watch and News](docs/screenshots/dashboard2.png)
+
+Live prices for selected assets are displayed alongside recent crypto headlines.
+
+### Daily Crypto Meme
+
+![Daily Crypto Meme](docs/screenshots/dashboard3.png)
+
+A dynamically selected crypto meme adds a lighter element to the dashboard.
+
+---
+
+## Onboarding & Personalization
+
+New users complete a three-step onboarding flow before entering the dashboard.
+
+### Step 1 — Choose Crypto Assets
+
+![Choose Assets](docs/screenshots/assets.png)
+
+Users select the cryptocurrencies they want BlockMind to follow.
+
+### Step 2 — Choose Investor Style
+
+![Investor Style](docs/screenshots/aproach.png)
+
+Users choose the investor profile that best represents them, such as HODLer, Day Trader or NFT Collector.
+
+### Step 3 — Choose Content Preferences
+
+![Content Preferences](docs/screenshots/content.png)
+
+Users select which types of content they want BlockMind to prioritize.
+
+These onboarding choices are stored in MongoDB and later used for dashboard and AI personalization.
+
+---
+
+## Main Features
 
 ###  Authentication
 
-Users can create an account and securely log in to BlockMind.
-
-Authentication includes:
+BlockMind includes a complete authentication flow with:
 
 - User registration
 - Login
@@ -65,54 +101,38 @@ Authentication includes:
 - JWT-based authentication
 - Protected frontend routes
 - Backend authentication middleware
+- Email format validation
+- Password length validation
+
+### Sign In
+
+![BlockMind Sign In](docs/screenshots/signin.png)
+
+### Sign Up
+
+![BlockMind Sign Up](docs/screenshots/signup.png)
 
 ---
 
-###  Personalized Onboarding
+###  AI Insight of the Day
 
-After signing up, users complete a short onboarding flow.
+BlockMind generates a personalized daily crypto insight based on the user's:
 
-The onboarding collects:
+- Selected crypto assets
+- Investor style
+- Content preferences
 
-**Crypto Assets**
-- Bitcoin
-- Ethereum
-- Solana
-- Dogecoin
-- and additional searchable assets
+The AI content is designed to be educational and descriptive rather than financial advice.
 
-**Investor Style**
--  HODLer
--  Day Trader
--  NFT Collector
+AI responses are validated before being displayed. If the AI provider is temporarily unavailable or returns an invalid response, BlockMind can return a safe fallback instead of breaking the dashboard.
 
-**Content Preferences**
-- Market News
-- Charts
-- Social
-- Fun
-
-These preferences are stored in MongoDB and are used to personalize the user's dashboard and AI-generated content.
+Valid daily insights are stored in MongoDB so they do not need to be regenerated every time the dashboard loads.
 
 ---
-
-##  Personalized Dashboard
-
-The main dashboard combines several independent data sources into one personalized experience.
-
-###  Market News
-
-Displays current crypto-related news using a public crypto news feed.
-
-Users can:
-
-- View recent headlines
-- Open the original article
-- Give positive or negative feedback
 
 ###  Market Watch
 
-Displays live cryptocurrency market information for the user's selected assets.
+The Market Watch section displays live cryptocurrency market information for the user's selected assets.
 
 Data includes:
 
@@ -120,11 +140,42 @@ Data includes:
 - 24-hour percentage change
 - Personalized asset selection
 
-Users can also search for and add additional cryptocurrencies.
+Users can also add additional cryptocurrencies to their followed assets.
+
+Market data is retrieved through the CoinGecko API and cached on the backend to reduce unnecessary external requests.
+
+---
+
+###  Market News
+
+The dashboard displays recent cryptocurrency news from CoinDesk.
+
+Users can:
+
+- View recent headlines
+- Open the original article
+- Refresh the news feed
+- Give positive or negative feedback
+
+---
+
+###  Crypto Search
+
+Users can search for cryptocurrencies directly from the dashboard.
+
+![Crypto Search](docs/screenshots/searchingbar.png)
+
+Search results include the cryptocurrency name, symbol and market-cap rank and allow users to navigate directly to a dedicated coin page.
+
+---
 
 ###  Coin Details
 
-Selecting a cryptocurrency opens a dedicated coin page containing:
+Selecting a cryptocurrency opens its dedicated market information page.
+
+![Coin Details](docs/screenshots/coinpage.png)
+
+The page includes:
 
 - Current price
 - Market capitalization
@@ -132,88 +183,114 @@ Selecting a cryptocurrency opens a dedicated coin page containing:
 - 24-hour high
 - 24-hour low
 - 24-hour price change
+- Option to add the cryptocurrency to the user's followed assets
 
-Coin data is cached on the backend to reduce unnecessary external API calls and improve reliability.
-
-###  AI Insight of the Day
-
-BlockMind generates a personalized daily crypto insight based on:
-
-- Selected crypto assets
-- Investor style
-- Content preferences
-
-The generated content is designed to be educational and descriptive rather than financial advice.
-
-AI responses are validated before being displayed. If the AI provider is temporarily unavailable or returns an invalid response, BlockMind can provide a safe fallback instead of breaking the dashboard.
-
-Generated insights are stored in MongoDB so a valid daily insight does not need to be regenerated on every dashboard request.
-
-###  Crypto Meme
-
-The dashboard also includes a fun crypto meme selected dynamically from a curated collection.
-
-The meme changes as the dashboard content updates and provides a lighter component alongside market information.
+Coin data is cached on the backend to improve reliability and reduce unnecessary external API requests.
 
 ---
 
-##  Feedback System
+###  Daily Crypto Meme
 
-Users can vote on dashboard content using **thumbs up 👍 or thumbs down 👎**.
+The dashboard includes a crypto meme selected dynamically from a curated collection.
 
-Feedback is currently supported for:
+The meme provides a lighter component alongside the market information and can change when dashboard content is refreshed.
+
+Users can also provide 👍 or 👎 feedback on the displayed meme.
+
+---
+
+### ⚙️ Personalization Settings
+
+Users are not locked into the choices they made during onboarding.
+
+They can later update their followed assets, investor style and content preferences from the settings page.
+
+![Personalization Settings](docs/screenshots/personalize1.png)
+
+![Content Settings](docs/screenshots/personalize2.png)
+
+Changes are persisted in MongoDB and used to update the personalized dashboard experience.
+
+---
+
+###  Notifications
+
+BlockMind includes a personalized notification interface for relevant dashboard updates.
+
+![Notifications](docs/screenshots/notification.png)
+
+Notifications reflect information related to the user's followed assets and personalized experience.
+
+---
+
+## Feedback System
+
+Each major dashboard section supports **thumbs up 👍 / thumbs down 👎 feedback**.
+
+Feedback is supported for:
 
 - AI insights
 - Crypto memes
 - Market news
 - Coin-price content
 
-Each feedback record is associated with the authenticated user and the relevant content.
+Each feedback record is stored in MongoDB and associated with:
 
-This creates a foundation for future recommendation improvements based on actual user behavior rather than preferences alone.
+- The authenticated user
+- Content type
+- Content identifier
+- The user's vote
+- Timestamps
+
+This provides a foundation for improving future recommendations using actual user behavior rather than onboarding preferences alone.
 
 ---
 
-##  Future Recommendation & Training Process
+## Future Recommendation & Training Process
 
-The current version stores user feedback but does not train a machine-learning model directly.
+The current version stores feedback but does not directly train a machine-learning model.
 
-A future recommendation pipeline could use the stored feedback as follows:
+A future recommendation pipeline could combine onboarding preferences with historical feedback to create increasingly personalized recommendations.
 
-1. Combine each user's onboarding preferences with their historical feedback.
-2. Associate positive and negative votes with content type, assets and content metadata.
-3. Convert those interactions into preference signals.
-4. Use the signals to rank future dashboard content.
-5. Evaluate recommendation quality using separate training and validation datasets.
+A possible process would be:
+
+1. Combine each user's onboarding preferences with historical feedback.
+2. Associate positive and negative votes with assets, content types and content metadata.
+3. Convert these interactions into preference signals.
+4. Use those signals to rank future dashboard content.
+5. Evaluate recommendation quality using training and validation datasets.
 6. Continuously update user preference weights as additional feedback is collected.
 
-For example, repeated positive feedback on Ethereum market news could increase the ranking of similar ETH-related content for that user.
+For example, repeated positive feedback on Ethereum-related news could increase the ranking of similar ETH content for that user.
 
-Negative feedback would be treated as a signal rather than an absolute rule, since individual dislikes may be noisy or context-dependent.
+Negative feedback should be treated as a signal rather than an absolute rule because a single dislike may depend on context.
 
-This approach could later support ranking models, recommendation algorithms or improved AI prompt personalization.
+In the future, this data could support recommendation algorithms, ranking models or more advanced AI prompt personalization.
 
 ---
+
 ## If I Had More Time
 
 Given more development time, I would continue improving BlockMind beyond the scope of the current assignment.
 
-Some of the next features I would explore include:
+Some features I would explore next include:
 
-- Using the stored feedback to automatically personalize and re-rank future content for each user.
-- Making the meme section more personalized based on the user's selected assets and investor style.
-- Adding customizable price alerts for selected cryptocurrencies.
-- Adding a simple portfolio/watchlist performance view.
-- Expanding the coin details pages with historical price charts and additional market data.
-- Adding automated frontend and backend tests.
-- Improving monitoring and error handling for external APIs.
+- Automatically personalizing and re-ranking content based on stored feedback
+- Making memes more personalized based on selected assets and investor style
+- Customizable cryptocurrency price alerts
+- A simple portfolio and watchlist performance view
+- Historical price charts on individual coin pages
+- More detailed market statistics and analytics
+- Improved notification logic based on real market events
+- Automated frontend and backend testing
+- Additional monitoring and error handling for external APIs
+- More advanced AI personalization based on previous user interactions
 
-For this version, I focused on completing the main assignment requirements, building a clean end-to-end experience, and making sure the deployed application is stable and usable.
+For this version, I focused on completing the core assignment requirements, building a clean end-to-end experience and making sure the deployed application is stable and usable.
 
 ---
 
-
-##  Tech Stack
+## Tech Stack
 
 ### Frontend
 
@@ -240,8 +317,8 @@ For this version, I focused on completing the main assignment requirements, buil
 ### External Services
 
 - **CoinGecko API** — cryptocurrency prices, search and coin details
-- **CoinDesk RSS** — crypto market news
-- **OpenRouter** — AI-generated personalized insights
+- **CoinDesk RSS** — cryptocurrency market news
+- **OpenRouter** — personalized AI-generated insights
 
 ### Deployment
 
@@ -251,19 +328,19 @@ For this version, I focused on completing the main assignment requirements, buil
 
 ---
 
-##  Architecture
+## Architecture
 
 ```text
 ┌──────────────────────┐
-│      React Client    │
-│   Vite + TypeScript  │
+│     React Client     │
+│  Vite + TypeScript   │
 └──────────┬───────────┘
            │
            │ HTTPS / REST API
            ▼
 ┌──────────────────────┐
 │   Express Backend    │
-│      TypeScript      │
+│     TypeScript       │
 ├──────────────────────┤
 │ Authentication       │
 │ Personalization      │
@@ -281,16 +358,16 @@ For this version, I focused on completing the main assignment requirements, buil
         ▼
 ┌──────────────────────┐
 │    MongoDB Atlas     │
-│                     │
-│ Users               │
-│ AI Insights         │
-│ Feedback            │
+│                      │
+│ Users                │
+│ AI Insights          │
+│ Feedback             │
 └──────────────────────┘
 ```
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```text
 BlockMind-AI-Crypto-advisor/
@@ -313,13 +390,28 @@ BlockMind-AI-Crypto-advisor/
 │   │   └── server.ts
 │   └── package.json
 │
+├── docs/
+│   └── screenshots/
+│
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-##  Running the Project Locally
+## Live Application
+
+| Service | URL |
+|---|---|
+| **Frontend** | [block-mind-ai-crypto-advisor.vercel.app](https://block-mind-ai-crypto-advisor.vercel.app) |
+| **Backend API** | [blockmind-api.onrender.com](https://blockmind-api.onrender.com) |
+| **API Health Check** | [blockmind-api.onrender.com/health](https://blockmind-api.onrender.com/health) |
+
+> **Note:** The backend is hosted on Render's free tier. The first request after a period of inactivity may take a few seconds while the service wakes up.
+
+---
+
+## Running the Project Locally
 
 ### 1. Clone the repository
 
@@ -328,7 +420,7 @@ git clone https://github.com/michellecain31/BlockMind-AI-Crypto-advisor.git
 cd BlockMind-AI-Crypto-advisor
 ```
 
-### 2. Backend setup
+### 2. Backend Setup
 
 ```bash
 cd backend
@@ -355,13 +447,13 @@ Start the backend:
 npm run dev
 ```
 
-The backend will run locally on:
+The backend runs locally on:
 
 ```text
 http://localhost:5050
 ```
 
-### 3. Frontend setup
+### 3. Frontend Setup
 
 Open another terminal:
 
@@ -390,11 +482,11 @@ http://localhost:5173
 
 ---
 
-##  Environment & Security
+## Environment & Security
 
 Sensitive credentials are stored using environment variables and are **not committed to GitHub**.
 
-The repository's `.gitignore` excludes:
+The repository excludes private environment files, dependencies and build artifacts such as:
 
 ```text
 .env
@@ -407,26 +499,28 @@ __MACOSX/
 
 Example environment files may be included without real credentials.
 
+API keys, MongoDB credentials and JWT secrets should never be committed to the repository.
+
 ---
 
-##  API Reliability & Caching
+## API Reliability & Caching
 
-External free-tier APIs can enforce request limits.
+Free-tier external APIs may enforce request limits.
 
-To reduce unnecessary requests, BlockMind uses backend caching for cryptocurrency market data and coin details.
+BlockMind therefore uses backend caching for cryptocurrency market data and coin details.
 
-The CoinGecko integration also uses an API key stored securely as a backend environment variable.
+The CoinGecko API key is stored securely as a backend environment variable and is never exposed to the frontend.
 
-This helps:
+This approach helps:
 
 - Reduce repeated API requests
-- Improve dashboard response time
+- Improve response times
 - Reduce rate-limit errors
-- Provide cached data when appropriate
+- Reuse cached data when appropriate
 
 ---
 
-##  AI Development Process
+## AI Development Process
 
 AI-assisted development tools were used during the implementation of BlockMind.
 
@@ -434,16 +528,16 @@ AI-assisted development tools were used during the implementation of BlockMind.
 
 ChatGPT was used as a development assistant for:
 
-- Reviewing the task requirements
+- Reviewing the assignment requirements
 - Planning the application architecture
 - Debugging TypeScript and backend issues
 - Reviewing authentication and protected-route behavior
 - Designing the AI personalization flow
-- Debugging external API rate limits
-- CORS and deployment troubleshooting
+- Troubleshooting external API rate limits
+- CORS and deployment debugging
 - Reviewing responsive UX
 - Deployment guidance for Vercel, Render and MongoDB Atlas
-- Final requirement and code review
+- Final requirement and implementation review
 
 ### Cursor
 
@@ -453,38 +547,39 @@ Cursor was used during implementation for:
 - Editing and refactoring
 - TypeScript development
 - Component and service implementation
-- Reviewing project structure
+- Reviewing the project structure
 
-AI-generated suggestions were reviewed and tested during development rather than being used without validation.
+AI suggestions were reviewed, adapted and tested during development rather than being used without validation.
 
 The project was repeatedly verified through local builds, browser testing, deployment logs and production testing.
 
 ---
 
-##  Database
+## Database Access
 
 MongoDB Atlas stores the application's persistent data, including:
 
-- User accounts
-- Onboarding preferences
+- User accounts and preferences
 - AI-generated daily insights
 - User feedback
 
 Database credentials are intentionally **not included in this public repository**.
 
-Reviewer database access can be provided separately using restricted credentials.
+A dedicated **read-only reviewer account** has been created for evaluation. Access credentials can be provided separately with the assignment submission.
+
+This keeps production credentials private while still allowing the database structure and stored application data to be reviewed.
 
 ---
 
-##  Disclaimer
+## Disclaimer
 
-BlockMind is a coding project.
+BlockMind was created as a coding assignment.
 
 Crypto market information and AI-generated insights displayed by the application are provided for informational and educational purposes only and should **not be considered financial advice**.
 
 ---
 
-## 👩 Author
+## Author
 
 **Michelle Cain**
 
