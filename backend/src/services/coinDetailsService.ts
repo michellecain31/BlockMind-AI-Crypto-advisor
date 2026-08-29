@@ -2,23 +2,30 @@ type CoinGeckoDetailsResponse = {
   id: string
   symbol: string
   name: string
+
   image: {
     large: string
   }
+
   market_cap_rank: number | null
+
   market_data: {
     current_price: {
       usd: number
     }
+
     market_cap: {
       usd: number
     }
+
     high_24h: {
       usd: number
     }
+
     low_24h: {
       usd: number
     }
+
     price_change_percentage_24h: number
   }
 }
@@ -41,9 +48,11 @@ type CacheItem = {
   expiresAt: number
 }
 
-const CACHE_DURATION = 2 * 60 * 1000
+const CACHE_DURATION =
+  15 * 60 * 1000
 
-const coinCache = new Map<string, CacheItem>()
+const coinCache =
+  new Map<string, CacheItem>()
 
 const pendingRequests = new Map<
   string,
@@ -57,7 +66,8 @@ export const getCoinDetails = async (
     .trim()
     .toLowerCase()
 
-  const cached = coinCache.get(normalizedId)
+  const cached =
+    coinCache.get(normalizedId)
 
   if (
     cached &&
@@ -81,9 +91,8 @@ export const getCoinDetails = async (
     return existingRequest
   }
 
-  const request = fetchCoinDetails(
-    normalizedId,
-  )
+  const request =
+    fetchCoinDetails(normalizedId)
 
   pendingRequests.set(
     normalizedId,
@@ -96,22 +105,42 @@ export const getCoinDetails = async (
     coinCache.set(normalizedId, {
       data: coin,
       expiresAt:
-        Date.now() + CACHE_DURATION,
+        Date.now() +
+        CACHE_DURATION,
     })
 
     return coin
+  } catch (error) {
+    if (cached) {
+      console.warn(
+        `CoinGecko unavailable. Using cached coin details for: ${normalizedId}`,
+      )
+
+      return cached.data
+    }
+
+    throw error
   } finally {
-    pendingRequests.delete(normalizedId)
+    pendingRequests.delete(
+      normalizedId,
+    )
   }
 }
 
 const fetchCoinDetails = async (
   coinId: string,
 ): Promise<CoinDetails> => {
-  const response = await fetch(
+  const url =
     `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(
       coinId,
-    )}?localization=false&tickers=false&community_data=false&developer_data=false`,
+    )}` +
+    '?localization=false' +
+    '&tickers=false' +
+    '&community_data=false' +
+    '&developer_data=false'
+
+  const response = await fetch(
+    url,
     {
       headers: {
         Accept: 'application/json',
@@ -120,18 +149,23 @@ const fetchCoinDetails = async (
   )
 
   if (!response.ok) {
-    const body = await response.text()
+    const body =
+      await response.text()
 
     console.error(
       'CoinGecko coin details failed:',
       {
         status: response.status,
+        statusText:
+          response.statusText,
         body,
       },
     )
 
     if (response.status === 404) {
-      throw new Error('Coin not found')
+      throw new Error(
+        'Coin not found',
+      )
     }
 
     if (response.status === 429) {
@@ -151,17 +185,28 @@ const fetchCoinDetails = async (
   return {
     id: data.id,
     name: data.name,
-    symbol: data.symbol.toUpperCase(),
+    symbol:
+      data.symbol.toUpperCase(),
     image: data.image.large,
-    rank: data.market_cap_rank,
+    rank:
+      data.market_cap_rank,
+
     price:
-      data.market_data.current_price.usd,
+      data.market_data
+        .current_price.usd,
+
     marketCap:
-      data.market_data.market_cap.usd,
+      data.market_data
+        .market_cap.usd,
+
     high24h:
-      data.market_data.high_24h.usd,
+      data.market_data
+        .high_24h.usd,
+
     low24h:
-      data.market_data.low_24h.usd,
+      data.market_data
+        .low_24h.usd,
+
     change24h:
       data.market_data
         .price_change_percentage_24h,
